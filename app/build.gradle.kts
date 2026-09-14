@@ -36,6 +36,17 @@ android {
     }
 }
 
+val copyVersionedApk = tasks.register<Copy>("copyVersionedApk") {
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(layout.buildDirectory.dir("outputs/apk/versioned"))
+    include("app-debug.apk")
+    rename { "starpath-v0.$appVersion-debug.apk" }
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+    finalizedBy(copyVersionedApk)
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)

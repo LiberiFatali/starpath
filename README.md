@@ -19,7 +19,11 @@ export ANDROID_HOME=~/Android/Sdk   # or create local.properties with sdk.dir=
 ./gradlew :app:testDebugUnitTest
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk`. Install: `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+APK outputs:
+- Versioned: `app/build/outputs/apk/versioned/starpath-v0.2-debug.apk`
+- Standard: `app/build/outputs/apk/debug/app-debug.apk`
+
+Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.2-debug.apk`.
 
 ## Getting it on the watch (no watch-side install needed for v1)
 
