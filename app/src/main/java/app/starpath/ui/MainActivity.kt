@@ -115,11 +115,11 @@ class MainActivity : Activity() {
         val help = TextView(this).apply {
             textSize = 14f
             text = "\nOn the watch & Zepp App:\n" +
-                "1. Zepp App → Profile → Active 2 → App Alerts → enable “StarPath”.\n" +
+                "1. Zepp App → Device (bottom bar) → Active 2 → Notifications and Reminders → App Alerts → enable “StarPath”.\n" +
                 "2. Keep notification longer on watch:\n" +
                 "   • On watch: Settings → Display & Brightness → Auto Screen Off / Screen-on Duration → set to 15s–30s.\n" +
                 "   • StarPath automatically re-wakes the watch at milestones (500m, 200m, 100m, 50m) and pulses every 18s approaching turns.\n" +
-                "3. Zepp App → App Alerts → if “Only receive when screen is off” is ON, either turn it OFF for testing or use the 5s delayed button and lock your phone.\n" +
+                "3. Zepp App → Notifications and Reminders → App Alerts → if “Only receive when screen is off” is ON, either turn it OFF for testing or use the 5s delayed button and lock your phone.\n" +
                 "4. Ensure watch Do Not Disturb (DND) / Sleep Mode is OFF.\n\n" +
                 "Then navigate in Google Maps with phone in your pocket — " +
                 "background service starts automatically and turn cards appear live on the watch. " +

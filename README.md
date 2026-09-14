@@ -1,4 +1,4 @@
-# ★ StarPath — Google Maps Turns on Amazfit Active 2
+# StarPath - Google Maps Turns on Amazfit Active 2 ★
 
 StarPath intercepts Google Maps turn-by-turn navigation notifications, reformats them into high-contrast glanceable cards (`◀◀ 200 m / Nguyen Hue`), and re-posts them so the **Zepp app** mirrors them to your Amazfit Active 2 over Bluetooth. Phone stays in your pocket.
 
@@ -11,12 +11,13 @@ StarPath intercepts Google Maps turn-by-turn navigation notifications, reformats
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
 3. **Enable in Zepp App**:
-   Open **Zepp App** → **Profile** → **Active 2** → **App Alerts / Notifications** → **Manage Apps** → toggle **StarPath** ON.
+   Open **Zepp App** → **Device** (bottom bar) → select **Active 2** → **Notifications and Reminders** → **App Alerts** → toggle **StarPath** ON (tap **Manage Apps** at the bottom to check StarPath if not listed).
+   *(Tip: Tap "Send test card to watch" in StarPath first if StarPath does not appear in Zepp's app list yet).*
 4. **Ride with Google Maps**:
    Start navigation in Google Maps. StarPath starts automatically in the background, delivers live turn updates and vibration pulses before intersections, and shuts itself down when you arrive.
 
 > [!TIP]
-> **Troubleshooting tip**: In Zepp App → *App Alerts*, if **"Only receive when the screen is off"** is enabled, Zepp drops notifications forwarded while your phone screen is active. Either toggle it off or use the **"Send test card in 5s"** button in StarPath and lock your phone screen to test.
+> **Screen-off Alert Tip**: In Zepp App → *Notifications and Reminders* → *App Alerts*, if **"Only receive when the screen is off"** is enabled, Zepp will not send notifications to the watch while your phone screen is turned on. Either turn that setting OFF for testing, or tap **"Send test card in 5s"** in StarPath and immediately lock your phone screen.
 
 ---
 
@@ -45,31 +46,24 @@ Output artifacts:
 
 ---
 
-## 🤝 How to Contribute
+## 🤝 Contributing
 
-Contributions, bug reports, and new language parsers are welcome!
-
-1. **Fork and Clone** the repository.
-2. **Create a Feature Branch**:
-   ```bash
-   git checkout -b feat/support-new-language
-   ```
-3. **Add or Fix Parsing Rules**:
-   - Add new maneuver keywords or language patterns in `app/src/main/java/app/starpath/nav/GMapsParser.kt`.
-   - Add unit test cases with raw Google Maps notification text in `app/src/test/java/app/starpath/nav/GMapsParserTest.kt`.
-   - See **[IMPLEMENTATION.md](IMPLEMENTATION.md)** for architecture details and notification dumping instructions.
-4. **Verify All Tests Pass**:
-   ```bash
-   ./gradlew :app:testDebugUnitTest
-   ```
-5. **Open a Pull Request**: Provide a description of the changes and sample notification text dumps if adding new syntax.
+Contributions, bug fixes, and new language parsers are welcome! Please check **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed instructions on development setup, capturing notification dumps, and submitting PRs.
 
 ---
 
-## 📚 Documentation & Policies
+## 📚 Documentation
 
 - **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Architectural diagrams, component roles, stay-awake pulse algorithms, and developer debugging steps.
-- **[PRIVACY_POLICY.md](PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero data collection, zero network calls).
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, notification capture guide, and PR guidelines.
+- **[PRIVACY_POLICY.md](PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero telemetry).
+
+---
+
+## 📄 License
+
+This project is licensed under the [GNU General Public License v3.0](LICENSE). Derivative works or redistributions must remain open-source under GPLv3 and retain attribution to this original repository:
+[https://github.com/LiberiFatali/starpath](https://github.com/LiberiFatali/starpath)
 
 ---
 
