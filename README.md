@@ -4,6 +4,22 @@ Personal Android app: reads the Google Maps navigation notification, reformats i
 into a glanceable card (`◀◀ 200 m / Nguyen Hue`), and re-posts it with large direction
 graphics. The **Zepp app** forwards that card over BLE to the watch. Phone stays in your pocket.
 
+---
+
+## 📥 Installation & Download
+
+### Option 1: Direct Download (GitHub Releases)
+1. Download the latest signed release APK (`starpath-v*.apk`) from the **[Releases Page](https://github.com/LiberiFatali/starpath/releases)**.
+2. Open the `.apk` on your Android phone and install it.
+
+### Option 2: Auto-updates via Obtainium
+You can use [Obtainium](https://github.com/ImranR98/Obtainium) to get automatic in-app updates directly from this repository:
+1. In Obtainium, tap **Add App**.
+2. Paste: `https://github.com/LiberiFatali/starpath`
+3. Obtainium will automatically track releases and notify you of new versions.
+
+---
+
 ## Versions (pinned Sept 2026)
 
 - compileSdk / targetSdk **36** (Android 16), minSdk 29
@@ -11,19 +27,44 @@ graphics. The **Zepp app** forwards that card over BLE to the watch. Phone stays
 - androidx core-ktx **1.18.0** (1.19.0 needs compileSdk 37, not in stable channel yet), lifecycle-runtime-ktx **2.11.0**
 - Zepp App **10.8.1+**, Active 2 firmware up to date (Zepp OS 5)
 
-## Build
+## Build & Release
+
+### Local Build
 
 ```bash
 export ANDROID_HOME=~/Android/Sdk   # or create local.properties with sdk.dir=
 ./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
 ./gradlew :app:testDebugUnitTest
 ```
 
-APK outputs:
-- Versioned: `app/build/outputs/apk/versioned/starpath-v0.3-debug.apk`
-- Standard: `app/build/outputs/apk/debug/app-debug.apk`
+Output locations:
+- Release APK: `app/build/outputs/apk/versioned/starpath-v0.3.apk`
+- Debug APK: `app/build/outputs/apk/versioned/starpath-v0.3-debug.apk`
+- Play Store App Bundle: `app/build/outputs/bundle/versioned/starpath-v0.3.aab`
 
-Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.3-debug.apk`.
+### Publishing a New Release
+
+Releases are fully automated via GitHub Actions:
+
+```bash
+# 1. Bump versionCode & versionName in app/build.gradle.kts if needed
+# 2. Commit and push
+git commit -am "chore: prepare v0.3 release"
+git push
+
+# 3. Create and push a tag
+git tag v0.3
+git push origin v0.3
+```
+
+The GitHub Actions workflow will automatically:
+- Run all unit tests.
+- Sign the release APK and AAB with the production release keystore.
+- Compute SHA-256 checksums.
+- Publish a new GitHub Release with the APK, AAB, and checksums attached.
+
+---
 
 ## Getting it on the watch (no watch-side install needed for v1)
 
@@ -73,6 +114,10 @@ Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.3-debug.apk
 1. In a debug build, `adb logcat` the Maps notification dump.
 2. Fix `app/.../nav/GMapsParser.kt`, add the dump as a case in `GMapsParserTest.kt`.
 3. `./gradlew :app:testDebugUnitTest`.
+
+## Privacy Policy
+
+See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for details. StarPath does not collect, log, or transmit any user data.
 
 ## Safety
 
