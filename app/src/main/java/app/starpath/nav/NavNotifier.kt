@@ -3,8 +3,11 @@ package app.starpath.nav
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
+import app.starpath.ui.MainActivity
 
 /**
  * Re-posts the parsed navigation state as StarPath's own notification.
@@ -72,12 +75,35 @@ class NavNotifier(private val context: Context) {
 
     fun cancel() = manager.cancel(NOTIF_ID)
 
-    fun keepAliveNotification(): Notification =
-        NotificationCompat.Builder(context, KEEPALIVE_CHANNEL_ID)
+    fun keepAliveNotification(): Notification {
+        val stopIntent = Intent(context, KeepAliveService::class.java).apply {
+            action = KeepAliveService.ACTION_STOP
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            context,
+            0,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        return NotificationCompat.Builder(context, KEEPALIVE_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .setContentTitle("StarPath listening")
-            .setContentText("Start navigation in Google Maps")
+            .setContentTitle("StarPath active")
+            .setContentText("Syncing Google Maps navigation to watch")
+            .setContentIntent(openPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
             .setOngoing(true)
             .setSilent(true)
             .build()
+    }
 }

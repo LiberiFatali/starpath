@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val appVersion = 2
+val appVersion = 3
 
 android {
     namespace = "app.starpath"

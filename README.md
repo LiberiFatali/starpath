@@ -20,23 +20,28 @@ export ANDROID_HOME=~/Android/Sdk   # or create local.properties with sdk.dir=
 ```
 
 APK outputs:
-- Versioned: `app/build/outputs/apk/versioned/starpath-v0.2-debug.apk`
+- Versioned: `app/build/outputs/apk/versioned/starpath-v0.3-debug.apk`
 - Standard: `app/build/outputs/apk/debug/app-debug.apk`
 
-Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.2-debug.apk`.
+Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.3-debug.apk`.
 
 ## Getting it on the watch (no watch-side install needed for v1)
 
 1. Update Zepp App + Active 2 firmware. Pair the watch.
-2. Open StarPath, complete steps 1–4:
-   - **1. Allow notification access** (Listener)
-   - **2. Allow StarPath notifications** (POST_NOTIFICATIONS)
-   - **3. Disable battery optimization**
-   - **4. Start background listener**
-3. Tap **5. Send test card to watch** (or **5b. Send test card in 5s**).
+2. Open StarPath, tap **Grant Permissions (1-Tap Setup)**:
+   - Grants `POST_NOTIFICATIONS` (Android 13+).
+   - Prompts to disable battery optimization (keeps listener running with screen off).
+   - Deep-links directly to StarPath's notification access switch.
+   *(Background service starts and stops automatically when you navigate — no manual button needed!)*
+3. Tap **Send test card to watch** (or **Send test card in 5s**).
 4. Zepp App → Profile → Active 2 → **App Alerts / Notifications** → **Manage Apps** → ensure **StarPath** is checked.
 5. Tap test card again → it should vibrate on the watch within seconds with a large green/white directional arrow badge.
 6. Navigate in Google Maps. Turn cards appear on the watch live, incl. reroutes.
+
+## Background Lifecycle & Exiting
+
+- **Fully automatic lifecycle**: When you start navigation in Google Maps, StarPath automatically starts its foreground listener. When you reach your destination or cancel navigation in Maps, StarPath automatically shuts down its foreground listener.
+- **Easy exit**: To exit StarPath at any time, tap **Stop & Exit StarPath** in the app (which cleanly finishes and removes StarPath from recent apps) or tap the **Stop** button directly on the persistent notification card. No need to force close in system settings.
 
 ## Keeping notifications on screen longer
 
@@ -52,12 +57,12 @@ Install: `adb install -r app/build/outputs/apk/versioned/starpath-v0.2-debug.apk
 1. **Zepp "Only receive when the screen is off" setting (Most Common)**:
    - In Zepp App → Profile → Active 2 → **App Alerts**, check if **"Only receive when the screen is off"** is enabled.
    - If enabled, Zepp intentionally drops all notifications forwarded while you are looking at your active phone screen.
-   - **Fix**: Either toggle this setting **OFF** during testing, or tap **"5b. Send test card in 5s"** and immediately lock/turn off your phone screen.
+   - **Fix**: Either toggle this setting **OFF** during testing, or tap **"Send test card in 5s"** and immediately lock/turn off your phone screen.
 2. **Notification permissions (Android 13+)**:
-   - Check if the StarPath test notification appears in your phone's notification drawer. If it does not appear on the phone, tap **2. Allow StarPath notifications** to grant `POST_NOTIFICATIONS`.
+   - Check if the StarPath test notification appears in your phone's notification drawer. If it does not appear on the phone, tap **StarPath Notifications** under individual settings.
 3. **StarPath checked in Zepp App Alerts**:
    - In Zepp App → Profile → Active 2 → **App Alerts** → **Manage Apps**, make sure **StarPath** is toggled ON.
-   - Note: Some Zepp versions only show an app in this list after it has posted at least one notification on the phone. Tap button 5 once, then check the Zepp list.
+   - Note: Some Zepp versions only show an app in this list after it has posted at least one notification on the phone. Tap "Send test card" once, then check the Zepp list.
 4. **Watch Do Not Disturb (DND) / Sleep Mode**:
    - Swipe down on the watch face and verify that **DND (moon icon)** and **Sleep Mode** are turned OFF.
 5. **Bluetooth connection**:

@@ -35,7 +35,11 @@ class StarPathListener : NotificationListenerService() {
                 ?.map { it.toString() }.orEmpty(),
         ) ?: return
 
-        mapsActive = true
+        if (!mapsActive) {
+            mapsActive = true
+            KeepAliveService.start(this)
+        }
+
         val alertDecision = alertManager.evaluate(update)
         val contentChanged = NavFormatter.shouldRepost(lastCard, update)
 
@@ -61,7 +65,13 @@ class StarPathListener : NotificationListenerService() {
             lastCard = null
             alertManager.reset()
             notifier.cancel()
+            KeepAliveService.stop(this)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        KeepAliveService.stop(this)
     }
 
     private fun Int.hasFlag(flag: Int): Boolean = (this and flag) == flag
