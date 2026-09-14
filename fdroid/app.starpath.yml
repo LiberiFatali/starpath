@@ -15,7 +15,7 @@ Binaries: https://github.com/LiberiFatali/starpath/releases/download/v%v/starpat
 Builds:
   - versionName: '0.4'
     versionCode: 4
-    commit: 0ae9c70950b3a8a69415f8ea5b79edf95ce77000
+    commit: 8d287f80ed8fca4cbc45aed6c8b09b29ad4294a6
     subdir: app
     gradle:
       - yes
