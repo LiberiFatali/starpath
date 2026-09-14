@@ -6,14 +6,20 @@ SourceCode: https://github.com/LiberiFatali/starpath
 IssueTracker: https://github.com/LiberiFatali/starpath/issues
 Changelog: https://github.com/LiberiFatali/starpath/releases
 
-AutoUpdateMode: Version v%v
-UpdateCheckMode: Tags
-CurrentVersion: "0.3"
-CurrentVersionCode: 3
+AutoName: StarPath
+
+RepoType: git
+Repo: https://github.com/LiberiFatali/starpath.git
 
 Builds:
   - versionName: "0.3"
     versionCode: 3
     commit: v0.3
+    subdir: app
     gradle:
       - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: "0.3"
+CurrentVersionCode: 3
