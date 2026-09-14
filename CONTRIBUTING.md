@@ -50,12 +50,12 @@ adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.
 ```
 
 ### 2. Add Keywords to Parser
-Edit [`app/src/main/java/app/starpath/nav/GMapsParser.kt`](file:///home/hieunm/Projects/SideProj/starpath/app/src/main/java/app/starpath/nav/GMapsParser.kt):
+Edit [`app/src/main/java/app/starpath/nav/GMapsParser.kt`](app/src/main/java/app/starpath/nav/GMapsParser.kt):
 - Add maneuver keywords to regex patterns (e.g. left/right/straight/roundabout keywords).
 - Add distance units if your language uses localized symbols.
 
 ### 3. Add Unit Tests
-Add your captured notification text to [`app/src/test/java/app/starpath/nav/GMapsParserTest.kt`](file:///home/hieunm/Projects/SideProj/starpath/app/src/test/java/app/starpath/nav/GMapsParserTest.kt):
+Add your captured notification text to [`app/src/test/java/app/starpath/nav/GMapsParserTest.kt`](app/src/test/java/app/starpath/nav/GMapsParserTest.kt):
 ```kotlin
 @Test
 fun `parses localized maneuver correctly`() {

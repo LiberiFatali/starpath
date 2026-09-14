@@ -1,0 +1,19 @@
+Categories:
+  - Navigation
+License: GPL-3.0-or-later
+AuthorName: LiberiFatali
+SourceCode: https://github.com/LiberiFatali/starpath
+IssueTracker: https://github.com/LiberiFatali/starpath/issues
+Changelog: https://github.com/LiberiFatali/starpath/releases
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: "0.3"
+CurrentVersionCode: 3
+
+Builds:
+  - versionName: "0.3"
+    versionCode: 3
+    commit: v0.3
+    gradle:
+      - yes

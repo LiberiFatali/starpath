@@ -24,7 +24,7 @@ val keyAliasValue = System.getenv("KEY_ALIAS")
 val keyPasswordValue = System.getenv("KEY_PASSWORD")
     ?: keystoreProps.getProperty("keyPassword")
 
-val releaseKeyFile = storeFilePath?.let { rootProject.file(it) }
+val releaseKeyFile = storeFilePath?.takeIf { it.isNotBlank() }?.let { rootProject.file(it) }
 val hasReleaseSigning = releaseKeyFile?.exists() == true &&
     !storePasswordValue.isNullOrBlank() &&
     !keyAliasValue.isNullOrBlank()
@@ -86,15 +86,27 @@ val copyVersionedApk = tasks.register<Copy>("copyVersionedApk") {
 val copyVersionedReleaseApk = tasks.register<Copy>("copyVersionedReleaseApk") {
     from(layout.buildDirectory.dir("outputs/apk/release"))
     into(layout.buildDirectory.dir("outputs/apk/versioned"))
-    include("app-release.apk")
-    rename { "starpath-v$appVersionName.apk" }
+    include("app-release.apk", "app-release-unsigned.apk")
+    rename { filename ->
+        if (filename.contains("unsigned")) {
+            "starpath-v$appVersionName-unsigned.apk"
+        } else {
+            "starpath-v$appVersionName.apk"
+        }
+    }
 }
 
 val copyVersionedReleaseBundle = tasks.register<Copy>("copyVersionedReleaseBundle") {
     from(layout.buildDirectory.dir("outputs/bundle/release"))
     into(layout.buildDirectory.dir("outputs/bundle/versioned"))
-    include("app-release.aab")
-    rename { "starpath-v$appVersionName.aab" }
+    include("app-release.aab", "app-release-unsigned.aab")
+    rename { filename ->
+        if (filename.contains("unsigned")) {
+            "starpath-v$appVersionName-unsigned.aab"
+        } else {
+            "starpath-v$appVersionName.aab"
+        }
+    }
 }
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {

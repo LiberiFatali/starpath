@@ -5,16 +5,26 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import java.util.EnumMap
 
 /**
  * Renders high-contrast, crisp 192x192 arrow graphics for Zepp OS watch notifications.
  * Zepp displays `android.largeIcon` prominently on the watch display.
+ * Bitmaps are cached by maneuver to minimize allocations during active navigation.
  */
 object ArrowBitmapGenerator {
 
     private const val SIZE = 192
+    private val bitmapCache = EnumMap<NavManeuver, Bitmap>(NavManeuver::class.java)
 
+    @Synchronized
     fun createArrowBitmap(maneuver: NavManeuver): Bitmap {
+        return bitmapCache.getOrPut(maneuver) {
+            renderArrowBitmap(maneuver)
+        }
+    }
+
+    private fun renderArrowBitmap(maneuver: NavManeuver): Bitmap {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 

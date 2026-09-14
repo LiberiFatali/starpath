@@ -55,11 +55,12 @@ class StarPathListener : NotificationListenerService() {
         if (sbn.packageName != GMapsParser.MAPS_PACKAGE || !mapsActive) return
         // Maps cleared its navigation session -> clear our card too.
         val stillThere = try {
-            activeNotifications.any {
-                it.packageName == GMapsParser.MAPS_PACKAGE &&
+            activeNotifications?.any {
+                it != null &&
+                    it.packageName == GMapsParser.MAPS_PACKAGE &&
                     it.notification.flags.hasFlag(Notification.FLAG_ONGOING_EVENT)
-            }
-        } catch (_: SecurityException) { true }
+            } ?: false
+        } catch (_: Exception) { true }
         if (!stillThere) {
             mapsActive = false
             lastCard = null

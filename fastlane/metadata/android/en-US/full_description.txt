@@ -1,0 +1,15 @@
+StarPath brings glanceable Google Maps navigation directions directly to your Amazfit Active 2 smartwatch while your phone stays safely in your pocket or bag.
+
+★ How It Works
+StarPath reads Google Maps navigation notifications, reformats them into high-contrast directional cards, and mirrors them over Bluetooth Low Energy via the Zepp app to your watch.
+
+★ Key Features
+• Large Directional Badges: Custom rendered high-contrast turn arrows designed specifically for quick glances on round smartwatch displays.
+• Smart Milestone Alerts: Automatically alerts and wakes the watch display at key approach milestones (500m, 200m, 100m, 50m).
+• Stay-Awake Pulses: Sends gentle keep-alive pulses approaching intersections so turn instructions remain visible on screen.
+• Automatic Lifecycle: Background service activates when Google Maps navigation starts and cleanly shuts down when you reach your destination.
+• Battery Efficient: Suppresses alerts during long straight cruising to minimize watch and phone battery drain.
+• 100% Privacy & Zero Telemetry: Completely offline. No internet permission, no analytics, no ads, and zero data collection.
+
+★ Supported Languages
+Maneuver and distance parsing currently supports English and Vietnamese, with additional language contributions welcome.
