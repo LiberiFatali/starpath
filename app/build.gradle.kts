@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val appVersion = 2
+
 android {
     namespace = "app.starpath"
     compileSdk = 36
@@ -10,8 +12,12 @@ android {
         applicationId = "app.starpath"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersion
+        versionName = "0.$appVersion"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
+import app.starpath.BuildConfig
 import app.starpath.nav.KeepAliveService
 import app.starpath.nav.NavFormatter
 import app.starpath.nav.NavManeuver
@@ -40,10 +41,13 @@ class MainActivity : Activity() {
             setPadding(48, 48, 48, 48)
         }
         val title = TextView(this).apply {
-            text = "★ StarPath"
-            textSize = 26f
+            text = "★ StarPath v${BuildConfig.VERSION_NAME}"
+            textSize = 24f
         }
-        status = TextView(this).apply { textSize = 15f }
+        status = TextView(this).apply {
+            textSize = 15f
+            setPadding(0, 8, 0, 16)
+        }
         layout.addView(title)
         layout.addView(status)
 
