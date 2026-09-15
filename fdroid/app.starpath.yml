@@ -20,9 +20,16 @@ Builds:
     gradle:
       - yes
 
+  - versionName: '0.5'
+    versionCode: 5
+    commit: 6e4a99a5777a8bc7496d2927b5b067b594f107d7
+    subdir: app
+    gradle:
+      - yes
+
 AllowedAPKSigningKeys: bca0b3fe8815b98a45f61c10b17bf5851e9a866cc5e145f11323d2572aa11f83
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: '0.4'
-CurrentVersionCode: 4
+CurrentVersion: '0.5'
+CurrentVersionCode: 5
