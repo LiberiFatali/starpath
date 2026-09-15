@@ -46,8 +46,7 @@ Please refer to Google's and your smartwatch companion app's respective privacy 
 
 ## 4. Open Source
 
-StarPath is open-source software. You can audit the complete source code at any time:
-[https://github.com/LiberiFatali/starpath](https://github.com/LiberiFatali/starpath)
+StarPath is open-source software. You can audit the complete source code at any time.
 
 ---
 

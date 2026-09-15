@@ -7,7 +7,7 @@ StarPath intercepts Google Maps turn-by-turn navigation notifications, reformats
 ## 🚀 How to Use
 
 1. **Install the App**:
-   Download the latest signed `starpath-v*.apk` from **[GitHub Releases](https://github.com/LiberiFatali/starpath/releases)** and install it on your Android phone.
+   Download the latest signed `starpath-v*.apk` from **GitHub Releases** and install it on your Android phone.
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
 3. **Enable in Zepp App**:
@@ -46,24 +46,11 @@ Output artifacts:
 
 ---
 
-## 🤝 Contributing
-
-Contributions, bug fixes, and new language parsers are welcome! Please check **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed instructions on development setup, capturing notification dumps, and submitting PRs.
-
----
-
 ## 📚 Documentation
 
 - **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Architectural diagrams, component roles, stay-awake pulse algorithms, and developer debugging steps.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, notification capture guide, and PR guidelines.
 - **[PRIVACY_POLICY.md](PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero telemetry).
-
----
-
-## 📄 License
-
-This project is licensed under the [GNU General Public License v3.0](LICENSE). Derivative works or redistributions must remain open-source under GPLv3 and retain attribution to this original repository:
-[https://github.com/LiberiFatali/starpath](https://github.com/LiberiFatali/starpath)
 
 ---
 
