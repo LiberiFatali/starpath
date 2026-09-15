@@ -1,6 +1,8 @@
-# StarPath - Google Maps Turns on Amazfit Active 2 ★
+# ★ StarPath - Google Maps turns on Amazfit Active 2
 
-StarPath intercepts Google Maps turn-by-turn navigation notifications, reformats them into high-contrast glanceable cards (`◀◀ 200 m / Nguyen Hue`), and re-posts them so the **Zepp app** mirrors them to your Amazfit Active 2 over Bluetooth. Phone stays in your pocket.
+> **Why:** Amazfit Active 2 has no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket.
+>
+> **How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`◀◀ 200 m / Nguyen Hue`) that the Zepp app mirrors to your watch over Bluetooth.
 
 ---
 
