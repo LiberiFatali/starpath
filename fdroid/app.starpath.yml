@@ -29,7 +29,7 @@ Builds:
 
   - versionName: '0.6'
     versionCode: 6
-    commit: 8eaf967239db7635b488f0c9f9ce818cca74d6ea
+    commit: dacf7de846495d7ccb9409db8d06ae06f353b5ea
     subdir: app
     gradle:
       - yes
