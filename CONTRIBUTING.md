@@ -95,8 +95,8 @@ fun `parses localized maneuver correctly`() {
 
 ## 🏷️ Releasing a New Version
 
-Releases are cut via the **Prepare Release** workflow (Actions →
-Prepare Release → Run workflow, optional `version` input — empty
+Releases are cut via the **Release** workflow (Actions →
+Release → Run workflow on branch `main`, optional `version` input — empty
 auto-bumps minor from the latest tag). It:
 
 1. Bumps the version literals in `app/build.gradle.kts`
@@ -106,7 +106,7 @@ auto-bumps minor from the latest tag). It:
    checkupdates parser reads them, so never derive them from env/tags.
 2. Tags that exact commit (`v0.7`) so the tag always carries correct
    literals (F-Droid builds from the tag commit).
-3. Calls the `Release` workflow, which builds the signed APK/AAB, creates
+3. Builds the signed APK/AAB from the tag, creates
    the GitHub Release with checksums, and syncs back to `main` (bot
    commit): a fastlane changelog stub at
    `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if
@@ -116,16 +116,13 @@ auto-bumps minor from the latest tag). It:
 Notes:
 
 - Direct `git tag` pushes are inert — no workflow listens to them. Use
-  Prepare Release.
+  the Release workflow.
 - Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
   (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
   migrated to a computed mapping.
 - Local builds use the checked-in fallback version; set
   `APP_VERSION_NAME` / `APP_VERSION_CODE` (or `-PappVersionName` /
   `-PappVersionCode`) to override.
-- `Release` keeps a `workflow_dispatch` entry for emergency manual builds
-  (requires `version`, optional `tag`); dispatch runs skip the metadata
-  sync-back.
 
 ---
 

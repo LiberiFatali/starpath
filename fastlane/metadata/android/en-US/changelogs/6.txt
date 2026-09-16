@@ -5,3 +5,5 @@
 - docs(readme): improve project overview and formatting
 - feat(nav): add MapsRemoteParser to extract custom RemoteViews instructions
 - feat(release): automate release process and versioning
+- chore(fdroid): sync metadata for v0.6 [skip ci]
+- feat(nav): add arrow icon classifier and release workflow
