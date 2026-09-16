@@ -203,7 +203,7 @@ object ArrowBitmapGenerator {
                 }
                 canvas.drawPath(head, fillPaint)
             }
-            NavManeuver.STRAIGHT, NavManeuver.UNKNOWN -> {
+            NavManeuver.STRAIGHT -> {
                 // Straight ahead arrow pointing up
                 path.moveTo(center, center + 44f)
                 path.lineTo(center, center - 12f)
@@ -215,6 +215,17 @@ object ArrowBitmapGenerator {
                     close()
                 }
                 canvas.drawPath(head, fillPaint)
+            }
+            NavManeuver.UNKNOWN -> {
+                // Distinct "?": unparsable directions must never masquerade
+                // as a confident straight arrow.
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.WHITE
+                    textSize = 110f
+                    textAlign = Paint.Align.CENTER
+                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                }
+                canvas.drawText("?", center, center + 40f, textPaint)
             }
         }
 

@@ -19,9 +19,10 @@ object GMapsParser {
     const val MAPS_PACKAGE = "com.google.android.apps.maps"
 
     private val distanceFirst = Regex(
-        """(?i)(?:in|after|sau)\s+([\d.,]+)\s*(km|m|mi|ft)\b"""
+        """(?i)(?:in|after|sau)\s+([\d.,]+)\s*(km|m|mi|ft|yd)\b"""
     )
-    private val distanceAny = Regex("""([\d.,]+)\s*(km|m|mi|ft)\b""")
+    // Guard against speed ("60 km/h"): unit must not be followed by "/h".
+    private val distanceAny = Regex("""([\d.,]+)\s*(km|m|mi|ft|yd)\b(?!/h)""")
 
     fun parse(
         title: String?,
@@ -30,33 +31,39 @@ object GMapsParser {
         textLines: List<String>,
     ): NavUpdate? {
         val lines = buildList {
-            bigText?.takeIf { it.isNotBlank() }?.let { add(it) }
             title?.takeIf { it.isNotBlank() }?.let { add(it) }
+            bigText?.takeIf { it.isNotBlank() }?.let { add(it) }
             text?.takeIf { it.isNotBlank() }?.let { add(it) }
             addAll(textLines.filter { it.isNotBlank() })
         }
         if (lines.isEmpty()) return null
-        val head = lines.first()
 
-        if (isRerouting(head)) {
+        // Rerouting may appear in any line (Maps sometimes keeps the old
+        // instruction in title while bigText already says "Rerouting…").
+        val rerouteLine = lines.firstOrNull { isRerouting(it) }
+        if (rerouteLine != null) {
             return NavUpdate(
                 maneuver = NavManeuver.UNKNOWN,
                 distanceText = "",
                 distanceMeters = null,
-                street = head,
+                street = rerouteLine,
                 tripLine = "",
                 state = NavState.REROUTING,
             )
         }
 
+        val head = lines.first()
         val body = lines.getOrNull(1).orEmpty()
         val trip = lines.drop(2).firstOrNull { looksLikeTripLine(it) }.orEmpty()
         val (distanceText, distanceMeters) = extractDistance(head)
             ?: extractDistance(body)
+            ?: lines.drop(2).firstNotNullOfOrNull { extractDistance(it) }
             ?: ("" to null)
 
         return NavUpdate(
-            maneuver = detectManeuver(head),
+            // Scan every line in priority order: the maneuver verb may live
+            // in title while bigText holds the trip summary, or vice versa.
+            maneuver = detectManeuver(lines),
             distanceText = distanceText,
             distanceMeters = distanceMeters,
             street = extractStreet(head, body),
@@ -65,9 +72,49 @@ object GMapsParser {
         )
     }
 
+    /**
+     * Preferred entry point for [MapsRemoteParser]: the true instruction
+     * ("Turn left onto X"), distance ("200 m") and trip line come from
+     * separate RemoteViews fields, so no head/body guessing is needed.
+     */
+    fun parseRemote(
+        instruction: String,
+        distanceLine: String,
+        tripLine: String,
+    ): NavUpdate? {
+        if (instruction.isBlank() && distanceLine.isBlank() && tripLine.isBlank()) return null
+        if (instruction.isNotBlank() && isRerouting(instruction)) {
+            return NavUpdate(
+                maneuver = NavManeuver.UNKNOWN,
+                distanceText = "",
+                distanceMeters = null,
+                street = instruction,
+                tripLine = "",
+                state = NavState.REROUTING,
+            )
+        }
+        val (distanceText, distanceMeters) = extractDistance(instruction)
+            ?: extractDistance(distanceLine)
+            ?: ("" to null)
+        val street = extractStreet(
+            instruction.ifBlank { distanceLine.ifBlank { tripLine } },
+            "",
+        ).let { if (it == instruction) instruction else it }
+        return NavUpdate(
+            maneuver = if (instruction.isBlank()) NavManeuver.UNKNOWN
+            else detectManeuver(instruction),
+            distanceText = distanceText,
+            distanceMeters = distanceMeters,
+            street = street,
+            tripLine = tripLine,
+            state = NavState.ENROUTE,
+        )
+    }
+
     private fun isRerouting(s: String): Boolean {
         val t = s.lowercase()
-        return "rerouting" in t || "finding" in t && "route" in t ||
+        return "rerouting" in t || "recalculating" in t ||
+            "finding" in t && "route" in t || "searching" in t && "route" in t ||
             "đang tìm" in t || "tìm lại" in t || "tuyến đường" in t && "mới" in t
     }
 
@@ -86,30 +133,53 @@ object GMapsParser {
             "km" -> (value * 1000).toInt()
             "mi" -> (value * 1609).toInt()
             "ft" -> (value * 0.3048).toInt()
+            "yd" -> (value * 0.9144).toInt()
             else -> value.toInt()
         }
         return "$raw $unit" to meters
     }
 
+    /** First non-UNKNOWN maneuver across lines in priority order. */
+    internal fun detectManeuver(lines: List<String>): NavManeuver {
+        for (line in lines) {
+            val m = detectManeuver(line)
+            if (m != NavManeuver.UNKNOWN) return m
+        }
+        return NavManeuver.UNKNOWN
+    }
+
     internal fun detectManeuver(s: String): NavManeuver {
         val t = s.lowercase()
-        // English + Vietnamese, checked sharp/slight before plain turns.
+        // Word-boundary matching throughout: bare substring checks caused
+        // false STRAIGHT via "head" in "ahead". Order: sharp/slight/bear
+        // before plain turns, EXIT/ramp/merge before turns, STRAIGHT last.
+        fun has(vararg words: String): Boolean = words.any { it in t }
+        fun regex(p: String): Boolean = Regex(p).containsMatchIn(t)
         return when {
-            "u-turn" in t || "quay đầu" in t -> NavManeuver.UTURN
-            "sharp left" in t || "rẽ gấp trái" in t -> NavManeuver.SHARP_LEFT
-            "sharp right" in t || "rẽ gấp phải" in t -> NavManeuver.SHARP_RIGHT
-            "slight left" in t || "hơi" in t && "trái" in t -> NavManeuver.SLIGHT_LEFT
-            "slight right" in t || "hơi" in t && "phải" in t -> NavManeuver.SLIGHT_RIGHT
-            "roundabout" in t || "vòng xuyến" in t || "bùng binh" in t -> NavManeuver.ROUNDABOUT
-            "keep left" in t || "giữ bên trái" in t -> NavManeuver.KEEP_LEFT
-            "keep right" in t || "giữ bên phải" in t -> NavManeuver.KEEP_RIGHT
-            "exit" in t || "lối ra" in t -> NavManeuver.EXIT
-            "turn left" in t || "rẽ trái" in t -> NavManeuver.TURN_LEFT
-            "turn right" in t || "rẽ phải" in t -> NavManeuver.TURN_RIGHT
-            "arriv" in t || "destination" in t || "đến nơi" in t || "đã đến" in t ->
+            regex("""\bu[\s-]?turn\b""") || has("quay đầu") -> NavManeuver.UTURN
+            has("sharp left", "rẽ gấp trái", "rẽ gắt trái") -> NavManeuver.SHARP_LEFT
+            has("sharp right", "rẽ gấp phải", "rẽ gắt phải") -> NavManeuver.SHARP_RIGHT
+            has("slight left", "bear left", "rẽ nhẹ trái", "chếch trái", "nghiêng trái")
+                || has("hơi") && has("trái") -> NavManeuver.SLIGHT_LEFT
+            has("slight right", "bear right", "rẽ nhẹ phải", "chếch phải", "nghiêng phải")
+                || has("hơi") && has("phải") -> NavManeuver.SLIGHT_RIGHT
+            has("roundabout", "rotary", "traffic circle", "vòng xuyến", "bùng binh", "vòng xoay") ->
+                NavManeuver.ROUNDABOUT
+            has("keep left", "stay left", "giữ bên trái", "giữ làn trái") -> NavManeuver.KEEP_LEFT
+            has("keep right", "stay right", "giữ bên phải", "giữ làn phải") -> NavManeuver.KEEP_RIGHT
+            regex("""\bexit\b""") || has("take the exit", "take exit", "off ramp", "lối ra", "ra khỏi")
+                || has("take the ramp", "take ramp", "merge onto", "merge on", "nhập vào") ->
+                NavManeuver.EXIT
+            has("turn left", "rẽ trái") -> NavManeuver.TURN_LEFT
+            has("turn right", "rẽ phải") -> NavManeuver.TURN_RIGHT
+            has("arriv", "destination", "đến nơi", "đã đến", "you have arrived") ->
                 NavManeuver.DESTINATION
-            "straight" in t || "continue" in t || "head" in t ||
-                "đi thẳng" in t || "tiếp tục" in t -> NavManeuver.STRAIGHT
+            has("go straight", "straight ahead", "continue straight", "continue on", "stay on",
+                "đi thẳng") || has("tiếp tục")
+                || regex("""\bhead\s+(north|south|east|west|straight|up|towards?|for)\b""") ->
+                NavManeuver.STRAIGHT
+            // Bare "continue" (e.g. "Continue on Nguyen Hue") implies straight.
+            regex("""\bcontinue\b""") -> NavManeuver.STRAIGHT
             else -> NavManeuver.UNKNOWN
         }
     }

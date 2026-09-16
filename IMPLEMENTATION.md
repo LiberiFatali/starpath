@@ -129,12 +129,20 @@ If Google updates the Google Maps notification format in your region or language
 ### Step 1: Capture Raw Notification Dump
 Connect your phone via USB with USB debugging enabled, start Google Maps navigation, and run:
 ```bash
-adb logcat -s StarPathListener GMapsParser
+adb logcat -s StarPath StarPathRemote
 ```
-Alternatively, inspect the active notification extras using `dumpsys`:
+In debug builds `StarPathListener` logs the extras (`title/text/bigText/lines`)
+on every Maps post. Alternatively, inspect the active notification extras using `dumpsys`:
 ```bash
 adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.maps"
 ```
+
+> Why RemoteViews first: Maps keeps the true instruction in its custom
+> layout (`nav_description` = e.g. "Turn left onto X", `nav_title` =
+> distance, `nav_time` = trip line, arrow in `nav_notification_icon`) —
+> see `MapsRemoteParser.kt` (same approach as `3v1n0/GMapsParser`).
+> `GMapsParser` extras parsing is only the fallback, and unparsable
+> directions render as `?`, never as a fake straight arrow.
 
 ### Step 2: Add a Test Case
 Open `app/src/test/java/app/starpath/nav/GMapsParserTest.kt` and add a unit test using the captured raw strings:

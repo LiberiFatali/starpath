@@ -3,6 +3,8 @@ package app.starpath.nav
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
+import app.starpath.BuildConfig
 
 /**
  * Intercepts the Google Maps navigation notification, parses it, and
@@ -27,13 +29,25 @@ class StarPathListener : NotificationListenerService() {
             if (sbn.notification.extras.getString(Notification.EXTRA_TITLE).isNullOrBlank()) return
         }
         val extras = sbn.notification.extras
-        val update = GMapsParser.parse(
-            title = extras.getString(Notification.EXTRA_TITLE),
-            text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
-            bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-            textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
-                ?.map { it.toString() }.orEmpty(),
-        ) ?: return
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "StarPath",
+                "maps posted title=${extras.getString(Notification.EXTRA_TITLE)} " +
+                    "text=${extras.getCharSequence(Notification.EXTRA_TEXT)} " +
+                    "bigText=${extras.getCharSequence(Notification.EXTRA_BIG_TEXT)} " +
+                    "lines=${extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.toList()}",
+            )
+        }
+        // Prefer the true instruction from Maps' custom RemoteViews
+        // (nav_description/nav_title); extras are only a degraded fallback.
+        val update = MapsRemoteParser.parseUpdate(sbn, this)
+            ?: GMapsParser.parse(
+                title = extras.getString(Notification.EXTRA_TITLE),
+                text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
+                textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+                    ?.map { it.toString() }.orEmpty(),
+            ) ?: return
 
         if (!mapsActive) {
             mapsActive = true

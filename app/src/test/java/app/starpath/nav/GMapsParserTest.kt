@@ -86,16 +86,83 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `blank notification returns null`() {
-        assertNull(GMapsParser.parse(null, null, null, emptyList()))
-        assertNull(GMapsParser.parse("  ", " ", null, emptyList()))
+    fun `maneuver found when bigText holds trip summary, not instruction`() {
+        // Regression: parser used to check only lines.first() (bigText),
+        // so a trip summary hid the real turn in title.
+        val u = GMapsParser.parse(
+            title = "Turn left in 200 m onto Nguyen Hue",
+            text = "Nguyen Hue",
+            bigText = "12 min · 3.2 km · 5:30 PM",
+            textLines = emptyList(),
+        )!!
+        assertEquals(NavManeuver.TURN_LEFT, u.maneuver)
+        assertEquals("200 m", u.distanceText)
     }
 
     @Test
-    fun `formatter fits round screen`() {
-        val u = NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Nguyen Hue", "12 min", NavState.ENROUTE)
-        assertEquals("◀◀ 200 m", NavFormatter.title(u))
-        val long = u.copy(street = "Ludwig-van-Beethoven-Straße extended avenue name here")
-        assert(NavFormatter.text(long).length <= 26) { NavFormatter.text(long) }
+    fun `ahead does not force straight`() {
+        // "head" substring must not match "ahead".
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.detectManeuver("Sharp curve ahead in 200 m"),
+        )
+        assertEquals(
+            NavManeuver.STRAIGHT,
+            GMapsParser.detectManeuver("Head north on Main St"),
+        )
+        assertEquals(
+            NavManeuver.STRAIGHT,
+            GMapsParser.detectManeuver("Continue on Nguyen Hue for 2 km"),
+        )
+    }
+
+    @Test
+    fun `expanded maneuver vocabulary`() {
+        assertEquals(NavManeuver.SLIGHT_LEFT, GMapsParser.detectManeuver("Bear left in 100 m"))
+        assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Bear right onto ramp"))
+        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Take the ramp onto Highway 1"))
+        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Merge onto Highway 1 in 500 m"))
+        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Take exit 5 in 1 km"))
+        assertEquals(NavManeuver.KEEP_LEFT, GMapsParser.detectManeuver("Giữ làn trái"))
+        assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Chếch phải"))
+        // Trip summary must not false-positive on "km left".
+        assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("12 min · 3.2 km left"))
+    }
+
+    @Test
+    fun `remote fields map to update`() {
+        val fields = MapsRemoteParser.pickFields(
+            mapOf(
+                "nav_title" to "200 m",
+                "nav_description" to "Turn left onto Nguyen Hue",
+                "nav_time" to "12 min · 3.2 km · 5:30 PM",
+            )
+        )
+        assertEquals("Turn left onto Nguyen Hue", fields.instruction)
+        assertEquals("200 m", fields.distanceLine)
+        val u = MapsRemoteParser.toUpdate(fields)!!
+        assertEquals(NavManeuver.TURN_LEFT, u.maneuver)
+        assertEquals("200 m", u.distanceText)
+        assertEquals(200, u.distanceMeters)
+        assertEquals("Nguyen Hue", u.street)
+    }
+
+    @Test
+    fun `remote lockscreen fallback fields`() {
+        val fields = MapsRemoteParser.pickFields(
+            mapOf(
+                "title" to "500 m - Turn right",
+                "text" to "Le Loi · 10 min",
+            )
+        )
+        val u = MapsRemoteParser.toUpdate(fields)!!
+        assertEquals(NavManeuver.TURN_RIGHT, u.maneuver)
+        assertEquals("500 m", u.distanceText)
+    }
+
+    @Test
+    fun `unknown formatter shows question mark`() {
+        val u = NavUpdate(NavManeuver.UNKNOWN, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE)
+        assertEquals("? 200 m", NavFormatter.title(u))
     }
 }

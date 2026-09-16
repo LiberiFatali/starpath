@@ -18,5 +18,5 @@ enum class NavManeuver(val glyph: String, val ascii: String) {
     KEEP_RIGHT("▶", "->"),
     EXIT("↗", "exit"),
     DESTINATION("🏁", "[]"),
-    UNKNOWN("•", "-"),
+    UNKNOWN("?", "?"),
 }
