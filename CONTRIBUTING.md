@@ -117,6 +117,9 @@ Notes:
 
 - Direct `git tag` pushes are inert — no workflow listens to them. Use
   the Release workflow.
+- The workflow aborts before any bump/tag if `main` has no new non-bot
+  commits since the latest tag (bot `chore(fdroid)` sync-backs don't
+  count), so accidental clicks never cut an empty release.
 - Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
   (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
   migrated to a computed mapping.

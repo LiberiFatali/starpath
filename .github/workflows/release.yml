@@ -39,6 +39,28 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Check for new changes
+        # Fail-fast guard: aborts BEFORE any bump commit, tag, or build when
+        # main carries no real changes since the latest tag, so accidental
+        # clicks never cut an empty release. Bot sync-back commits
+        # (chore(fdroid) / [skip ci]) don't count as releasable changes.
+        run: |
+          LATEST="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          if [ -z "$LATEST" ]; then
+            echo "No previous tag; first release, proceeding."
+            exit 0
+          fi
+          echo "Commits since $LATEST (excluding bot sync-backs):"
+          git log "$LATEST..HEAD" --format='- %h %s' --reverse \
+            --grep='^chore(fdroid)' --grep='\[skip ci\]' --invert-grep | tee /tmp/release-changes.txt | head -n 30
+          COUNT="$(git rev-list --count "$LATEST..HEAD" \
+            --grep='^chore(fdroid)' --grep='\[skip ci\]' --invert-grep)"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::No new non-bot commits since $LATEST. Nothing to release — aborting before any bump/tag."
+            exit 1
+          fi
+          echo "::warning::Releasing with $COUNT new commit(s) since $LATEST (see list above)."
+
       - name: Resolve version
         id: version
         run: |
