@@ -1,0 +1,7 @@
+- Release 0.6.
+- Revise SECURITY.md for supported versions and reporting
+- Revise security vulnerability reporting guidelines
+- feat(fdroid): add build for version 0.5
+- docs(readme): improve project overview and formatting
+- feat(nav): add MapsRemoteParser to extract custom RemoteViews instructions
+- feat(release): automate release process and versioning
