@@ -1,7 +1,6 @@
 package app.starpath.nav
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -51,25 +50,5 @@ class NavFormatterTest {
         val longTrip = "A".repeat(100)
         val longUpdate = NavUpdate(NavManeuver.TURN_LEFT, "100 m", 100, "St", longTrip, NavState.ENROUTE)
         assertEquals(48, NavFormatter.subText(longUpdate).length)
-    }
-
-    @Test
-    fun `shouldRepost behaves accurately`() {
-        val u1 = NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Nguyen Hue", "10 min", NavState.ENROUTE)
-        val card1 = NavFormatter.toCard(u1)
-
-        // When old is null -> should repost
-        assertTrue(NavFormatter.shouldRepost(null, u1))
-
-        // Same content -> should not repost
-        assertFalse(NavFormatter.shouldRepost(card1, u1))
-
-        // Distance changed -> should repost
-        val u2 = u1.copy(distanceText = "150 m", distanceMeters = 150)
-        assertTrue(NavFormatter.shouldRepost(card1, u2))
-
-        // Street changed -> should repost
-        val u3 = u1.copy(street = "Le Loi")
-        assertTrue(NavFormatter.shouldRepost(card1, u3))
     }
 }

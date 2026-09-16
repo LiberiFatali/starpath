@@ -1,13 +1,27 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # Releases are cut via the prepare-release workflow (bump → commit → tag →
+  # call). Direct `git tag` pushes are inert: no trigger listens to them.
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.7 or v0.7).'
+        required: true
+        type: string
+      tag:
+        description: 'Tag to build (e.g. v0.7). Empty builds the calling ref.'
+        required: false
+        default: ''
+        type: string
   workflow_dispatch:
     inputs:
       version:
         description: 'Version to release (e.g. 0.7 or v0.7). Only used for manual runs without a tag.'
+        required: true
+        default: ''
+      tag:
+        description: 'Tag to build (e.g. v0.7). Empty builds the selected branch.'
         required: false
         default: ''
 
@@ -23,23 +37,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.tag == '' && github.ref || inputs.tag }}
           fetch-depth: 0
 
-      - name: Resolve version from tag
+      - name: Resolve version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            RAW="${{ inputs.version }}"
-            if [ -z "$RAW" ]; then
-              echo "::error::workflow_dispatch requires the 'version' input (e.g. 0.7)."
-              exit 1
-            fi
-          else
-            RAW="$GITHUB_REF_NAME"
+          RAW="${{ inputs.version }}"
+          if [ -z "$RAW" ]; then
+            echo "::error::'version' input is required (e.g. 0.7)."
+            exit 1
           fi
-          TAG="$RAW"
-          # Accept with or without leading 'v'
+          # Accept with or without leading 'v'; TAG is always the v form so
+          # git lookups (rev-list, tag list) work regardless of input style.
           VERSION="${RAW#v}"
+          TAG="v$VERSION"
           if ! echo "$VERSION" | grep -Eq '^0\.[0-9]+$'; then
             echo "::error::Unsupported version '$RAW'. Expected tag like v0.7 (versionName 0.MINOR, versionCode MINOR). Patch/major versions need the computed versionCode scheme migration."
             exit 1
@@ -121,6 +133,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
             release-artifacts/*
           generate_release_notes: true
@@ -128,6 +141,8 @@ jobs:
           prerelease: false
 
       - name: Sync F-Droid metadata & changelog back to main
+        # Runs for workflow_call (prepare-release path). Manual
+        # workflow_dispatch runs build only and skip the sync-back.
         if: github.event_name != 'workflow_dispatch'
         run: |
           TAG="${{ steps.version.outputs.tag }}"

@@ -8,9 +8,11 @@ import android.graphics.Path
 import java.util.EnumMap
 
 /**
- * Renders high-contrast, crisp 192x192 arrow graphics for Zepp OS watch notifications.
- * Zepp displays `android.largeIcon` prominently on the watch display.
- * Bitmaps are cached by maneuver to minimize allocations during active navigation.
+ * Renders high-contrast 192x192 arrow graphics for the phone-side notification
+ * shade (`largeIcon`). Note: the Amazfit Active 2 does NOT display these —
+ * Zepp App Alerts forwards only notification text, so the watch direction
+ * comes from the [NavManeuver.glyph] in the title, not from this bitmap.
+ * Bitmaps are cached by maneuver to minimize allocations during navigation.
  */
 object ArrowBitmapGenerator {
 

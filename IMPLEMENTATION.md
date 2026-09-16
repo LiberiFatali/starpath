@@ -88,10 +88,12 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 
 ### `ArrowBitmapGenerator`
 * **File:** `app/src/main/java/app/starpath/nav/ArrowBitmapGenerator.kt`
-* **Role:** Programmatically renders large, high-contrast directional icons onto a 128×128 `Bitmap`.
-* **Display Optimization:**
-  - Android notification icons are often scaled down or masked on circular smartwatches.
-  - By rendering bold geometric arrow glyphs on a high-contrast background (dark circle with bright green/white arrows) and attaching it as the notification's `largeIcon`, the watch display renders an instantly legible directional indicator even at a glance while riding.
+* **Role:** Renders high-contrast directional icons for the **phone-side**
+  notification shade (`largeIcon`). Note: on the Amazfit Active 2 these
+  bitmaps do **not** reach the watch — Zepp App Alerts forwards only
+  notification **text** (title/body), so the watch direction comes from the
+  text glyphs (`◀◀`/`▶▶`/`▲▲`/`?`) produced by `NavFormatter`, never from
+  images. See §5 for why this matters.
 
 ### `KeepAliveService`
 * **File:** `app/src/main/java/app/starpath/nav/KeepAliveService.kt`
@@ -112,8 +114,8 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 StarPath does not require a custom mini-program installed on the watch for v1. Instead, it relies on the companion app's native notification bridge:
 
 1. StarPath posts an Android notification on the phone with `PRIORITY_HIGH` and `CATEGORY_NAVIGATION`.
-2. The **Zepp App** detects the notification via its own notification reader and transmits the title, text, and icons over Bluetooth Low Energy (BLE) to the Amazfit Active 2.
-3. The watch vibrates and turns on its screen, presenting the glance card.
+2. The **Zepp App** detects the notification via its own notification reader and transmits the notification **text** (title, body) over Bluetooth Low Energy (BLE) to the Amazfit Active 2. **Images (`largeIcon`, bitmaps) are NOT forwarded** — verified Sep 2026: image forwarding on Amazfit is a 2026 iOS-only beta limited to newer watches (Cheetah 2 Ultra / Balance Ultra / Balance 3…), Active 2 not included.
+3. The watch vibrates and turns on its screen, presenting the glance card (`◀◀ 40 m / street`).
 
 ### Watch Display Lifespan
 Smartwatches typically shut off their screen after 5 to 10 seconds to conserve battery:
@@ -126,23 +128,21 @@ Smartwatches typically shut off their screen after 5 to 10 seconds to conserve b
 
 If Google updates the Google Maps notification format in your region or language, follow these steps to capture and fix the parser:
 
-### Step 1: Capture Raw Notification Dump
-Connect your phone via USB with USB debugging enabled, start Google Maps navigation, and run:
+### Step 1: Capture Raw Notification Dump (no adb needed)
+
+Open StarPath → **Last Maps notification** → **Copy/Share debug info**. It shows,
+for the most recent Maps post: winning source (`EXTRAS` vs `NONE`), parsed
+maneuver/distance/street/trip, all captured text fields, the icon-classifier
+verdict + score, mask + per-direction scores, and any error. Paste it into the bug report.
+
+With USB debugging, alternatively:
 ```bash
-adb logcat -s StarPath StarPathRemote
-```
-In debug builds `StarPathListener` logs the extras (`title/text/bigText/lines`)
-on every Maps post. Alternatively, inspect the active notification extras using `dumpsys`:
-```bash
+adb logcat -s StarPath
 adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.maps"
 ```
 
-> Why RemoteViews first: Maps keeps the true instruction in its custom
-> layout (`nav_description` = e.g. "Turn left onto X", `nav_title` =
-> distance, `nav_time` = trip line, arrow in `nav_notification_icon`) —
-> see `MapsRemoteParser.kt` (same approach as `3v1n0/GMapsParser`).
-> `GMapsParser` extras parsing is only the fallback, and unparsable
-> directions render as `?`, never as a fake straight arrow.
+> Unparsable directions render as `?`, never as a fake straight arrow
+> (`GMapsParser` extras parsing is the only text source; no RemoteViews).
 
 ### Step 2: Add a Test Case
 Open `app/src/test/java/app/starpath/nav/GMapsParserTest.kt` and add a unit test using the captured raw strings:
@@ -166,3 +166,49 @@ fun `parses new format correctly`() {
 ./gradlew :app:testDebugUnitTest
 ```
 Ensure all tests pass before submitting changes.
+
+---
+
+## 5. Direction Pipeline: Text Glyphs via Text → Icon → Unknown
+
+**Constraint (verified Sep 2026).** The Active 2 shows only notification *text*;
+Maps often posts *icon-only* instructions (`40 m` + street name, no turn verb —
+the arrow bitmap carries the direction). So neither text parsing alone nor
+image forwarding can put turns on the wrist. StarPath bridges the gap on-phone:
+it reads Maps' arrow **pixels** and re-emits the verdict as a **text glyph**.
+
+**Decision order** (`StarPathListener` → `MapsRemoteParser.parseOutcome`):
+
+1. **Text verb** (`GMapsParser`): extras only
+   (`title → bigText → text → textLines`;
+   `subText` feeds the trip line only, never distance). Proven cases:
+   `Head south → ▲▲`, `Turn left … → ◀◀`, bare `toward X → ▲▲` (straight
+   phrasing; turn/exit/keep verbs keep priority above it).
+2. **Icon match** (`IconClassifier`): only when text yields `UNKNOWN`.
+   Captures the notification large icon bitmap, binarizes by
+   minority brightness polarity (works white-on-teal and dark-on-light),
+   downscales to a 16×16 mask, recenters to the foreground bounding box, then
+   compares first-order moments: `delta = topMeanX − bottomMeanX`
+   (top-half mean-x minus bottom-half mean-x). `delta ≤ −1.5 → TURN_LEFT`,
+   `delta ≥ +1.5 → TURN_RIGHT` (confidence `0.60 + |delta| × 0.07`, capped
+   at `0.95`); otherwise a centered mass with a narrow top apex → `STRAIGHT`
+   (`0.80`), else `?` (never U-turn or roundabout from
+   pixels). Masks shorter than 8 rows (chevrons, lone heads) are `UNKNOWN`;
+   Maps never points backwards, so there is no down-head. Thickness, dash
+   style, and shift cancel out. The 16×16 mask and per-direction scores are
+   logged to the `LastParse` debug dump for field harvesting.
+3. **`UNKNOWN → ?`**: never a fake straight arrow — neither in the glyph nor
+   in the phone-shade bitmap (`ArrowBitmapGenerator` draws a distinct `?`).
+
+**Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
+`▲▲` correct; icon-only `40 m` + street + left-hook → `◀◀` via moments;
+`260 m` + street + thick right-hook → `▶▶ R=0.89 applied=true`
+(`3_maps_starpath_turn_right.jpg`). Note: icon-only extras carry no
+next-turn distance (trip line holds remaining distance), so these cards
+render glyph + street until distance is reworked.
+
+**Files:** `nav/MapsRemoteParser.kt` (extras + largeIcon pixels + `Outcome`),
+`nav/IconClassifier.kt` (pure, JVM-tested), `nav/GMapsParser.kt` (keyword
+fallback), `nav/LastParse.kt` + `MainActivity` debug card (phone-only
+diagnostics). Tests: `IconClassifierTest` (polarity/shift/noise/blank/thick-field-hooks),
+`GMapsParserTest` (`toward` priority, subText trip-only).

@@ -1,0 +1,110 @@
+name: Prepare Release
+
+# The ONLY way to cut a release. Bumps the version literals, commits them to
+# main, tags that exact commit (so tags always carry correct literals), then
+# calls the Release workflow to build + publish. Direct `git tag` pushes are
+# inert: no workflow listens to them.
+#
+# Version scheme: versionName 0.MINOR, versionCode MINOR (e.g. v0.7 -> 0.7/7).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.7). Empty auto-bumps minor from the latest tag.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  bump-and-tag:
+    name: Bump version, commit & tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          RAW="${{ inputs.version }}"
+          if [ -z "$RAW" ]; then
+            LATEST="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+            if [ -z "$LATEST" ]; then
+              RAW="0.1"
+            else
+              MINOR="${LATEST#v0.}"
+              RAW="0.$((MINOR + 1))"
+            fi
+            echo "No version input; auto-bumped $LATEST -> $RAW."
+          fi
+          VERSION="${RAW#v}"
+          if ! echo "$VERSION" | grep -Eq '^0\.[0-9]+$'; then
+            echo "::error::Unsupported version '$RAW'. Expected like 0.7 (versionName 0.MINOR, versionCode MINOR)."
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists."
+            exit 1
+          fi
+          echo "VERSION=$VERSION CODE=${VERSION#0.} TAG=$TAG" | tr ' ' '\n' >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved -> versionName=$VERSION versionCode=${VERSION#0.} tag=$TAG"
+
+      - name: Bump version literals
+        run: |
+          python3 - "$VERSION" "$CODE" <<'EOF'
+          import re, sys
+          version, code = sys.argv[1], sys.argv[2]
+          path = "app/build.gradle.kts"
+          text = open(path).read()
+          # Literals must stay literal: F-Droid's checkupdates parser reads them.
+          new, n1 = re.subn(r"^(\s*)\?: \d+$", rf"\1?: {code}", text, count=1, flags=re.M)
+          new, n2 = re.subn(r"^(\s*)\?: \"[\d.]+\"$", rf'\1?: "{version}"', new, count=1, flags=re.M)
+          assert n1 == 1 and n2 == 1, "version literal lines not found"
+          open(path, "w").write(new)
+          sec = "SECURITY.md"
+          stext = open(sec).read()
+          snew, n3 = re.subn(r"^\| 0\.\d+ +\|", f"| {version}     |", stext, count=1, flags=re.M)
+          assert n3 == 1, "SECURITY.md version row not found"
+          open(sec, "w").write(snew)
+          print(f"bumped to {version} ({code})")
+          EOF
+          git diff --stat
+
+      - name: Commit, push & tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle.kts SECURITY.md
+          if git diff --cached --quiet; then
+            echo "::error::Nothing to bump (already at $VERSION?)."
+            exit 1
+          fi
+          git commit -m "release: bump to $TAG"
+          git push origin main
+          git tag "$TAG"
+          git push origin "$TAG"
+
+  release:
+    name: Build & Publish Release
+    needs: bump-and-tag
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.bump-and-tag.outputs.version }}
+      tag: ${{ needs.bump-and-tag.outputs.tag }}
+    secrets: inherit

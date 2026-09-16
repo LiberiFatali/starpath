@@ -8,11 +8,11 @@ plugins {
 val appVersionCode: Int =
     System.getenv("APP_VERSION_CODE")?.toIntOrNull()
         ?: providers.gradleProperty("appVersionCode").orNull?.toIntOrNull()
-        ?: 5
+        ?: 6
 val appVersionName: String =
     System.getenv("APP_VERSION_NAME")
         ?: providers.gradleProperty("appVersionName").orNull
-        ?: "0.5"
+        ?: "0.6"
 
 val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = Properties().apply {

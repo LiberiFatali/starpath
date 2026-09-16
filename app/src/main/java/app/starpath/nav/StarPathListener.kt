@@ -3,8 +3,6 @@ package app.starpath.nav
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.util.Log
-import app.starpath.BuildConfig
 
 /**
  * Intercepts the Google Maps navigation notification, parses it, and
@@ -14,7 +12,6 @@ class StarPathListener : NotificationListenerService() {
 
     private lateinit var notifier: NavNotifier
     private val alertManager = NavAlertManager()
-    private var lastCard: NavFormatter.Card? = null
     private var mapsActive = false
 
     override fun onCreate() {
@@ -28,26 +25,15 @@ class StarPathListener : NotificationListenerService() {
             // Maps posts navigation as ongoing; ignore transient Maps shares.
             if (sbn.notification.extras.getString(Notification.EXTRA_TITLE).isNullOrBlank()) return
         }
-        val extras = sbn.notification.extras
-        if (BuildConfig.DEBUG) {
-            Log.d(
-                "StarPath",
-                "maps posted title=${extras.getString(Notification.EXTRA_TITLE)} " +
-                    "text=${extras.getCharSequence(Notification.EXTRA_TEXT)} " +
-                    "bigText=${extras.getCharSequence(Notification.EXTRA_BIG_TEXT)} " +
-                    "lines=${extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.toList()}",
-            )
-        }
-        // Prefer the true instruction from Maps' custom RemoteViews
-        // (nav_description/nav_title); extras are only a degraded fallback.
-        val update = MapsRemoteParser.parseUpdate(sbn, this)
-            ?: GMapsParser.parse(
-                title = extras.getString(Notification.EXTRA_TITLE),
-                text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
-                bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-                textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
-                    ?.map { it.toString() }.orEmpty(),
-            ) ?: return
+        // Lightweight pipeline: extras text first, largeIcon arrow pixels
+        // when the text has no verb. Decision order: text verb > icon
+        // moments > UNKNOWN (never fake-straight).
+        // Decision order: text verb > icon match > UNKNOWN (never fake-straight).
+        // The watch only shows text glyphs, so the icon verdict is rendered
+        // as a glyph too — see IconClassifier KDoc.
+        val outcome = MapsRemoteParser.parseOutcome(sbn, this)
+        LastParse.store(outcome)
+        val update = outcome.update ?: return
 
         if (!mapsActive) {
             mapsActive = true
@@ -55,13 +41,11 @@ class StarPathListener : NotificationListenerService() {
         }
 
         val alertDecision = alertManager.evaluate(update)
-        val contentChanged = NavFormatter.shouldRepost(lastCard, update)
 
-        // Re-post if the content changed or if we need to re-alert / wake the watch screen
-        if (!contentChanged && !alertDecision.shouldAlert) return
-
+        // Always re-post: Maps can change direction faster than the parsed
+        // card content visibly changes (truncation/rounding can mask a real
+        // difference), so identical consecutive cards must still forward.
         val card = NavFormatter.toCard(update)
-        lastCard = card
         notifier.post(card, alert = alertDecision.shouldAlert)
     }
 
@@ -77,7 +61,6 @@ class StarPathListener : NotificationListenerService() {
         } catch (_: Exception) { true }
         if (!stillThere) {
             mapsActive = false
-            lastCard = null
             alertManager.reset()
             notifier.cancel()
             KeepAliveService.stop(this)

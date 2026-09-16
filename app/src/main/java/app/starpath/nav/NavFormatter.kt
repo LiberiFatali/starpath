@@ -24,17 +24,6 @@ object NavFormatter {
     fun subText(update: NavUpdate): String =
         update.tripLine.trim().take(48)
 
-    /**
-     * True when the card content changed enough to re-post. Re-posts drive
-     * the watch vibration, so distance-only flapping within the same bucket
-     * still re-posts (fresh ETA), but identical content never does.
-     */
-    fun shouldRepost(old: Card?, update: NavUpdate): Boolean {
-        if (old == null) return true
-        val card = toCard(update)
-        return old != card
-    }
-
     fun toCard(update: NavUpdate): Card =
         Card(title(update), text(update), subText(update), update.state, update.maneuver)
 

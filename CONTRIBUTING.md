@@ -95,36 +95,37 @@ fun `parses localized maneuver correctly`() {
 
 ## 🏷️ Releasing a New Version
 
-Releases are driven by git tags. The tag is the source of truth — no manual
-version-bump commit is needed before tagging.
+Releases are cut via the **Prepare Release** workflow (Actions →
+Prepare Release → Run workflow, optional `version` input — empty
+auto-bumps minor from the latest tag). It:
 
-```bash
-git checkout main
-git pull
-git tag v0.7
-git push origin v0.7
-```
-
-The `Release` workflow then:
-
-1. Derives `versionName` / `versionCode` from the tag (`v0.7` → name `0.7`,
-   code `7`) and builds the signed APK/AAB with those values.
-2. Creates the GitHub Release with checksums.
-3. Syncs back to `main` (bot commit): a fastlane changelog stub at
-   `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if missing)
-   and a new `Builds` entry plus `CurrentVersion` fields in
+1. Bumps the version literals in `app/build.gradle.kts`
+   (`versionName 0.MINOR` / `versionCode MINOR`, e.g. `0.7` / `7`) and the
+   `SECURITY.md` supported-version row, and commits to `main`
+   (`release: bump to v0.7`). The literals stay literal — F-Droid's
+   checkupdates parser reads them, so never derive them from env/tags.
+2. Tags that exact commit (`v0.7`) so the tag always carries correct
+   literals (F-Droid builds from the tag commit).
+3. Calls the `Release` workflow, which builds the signed APK/AAB, creates
+   the GitHub Release with checksums, and syncs back to `main` (bot
+   commit): a fastlane changelog stub at
+   `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if
+   missing) and a new `Builds` entry plus `CurrentVersion` fields in
    `fdroid/app.starpath.yml`.
 
 Notes:
 
+- Direct `git tag` pushes are inert — no workflow listens to them. Use
+  Prepare Release.
 - Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
   (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
   migrated to a computed mapping.
-- Local builds default to the checked-in fallback version; set
+- Local builds use the checked-in fallback version; set
   `APP_VERSION_NAME` / `APP_VERSION_CODE` (or `-PappVersionName` /
   `-PappVersionCode`) to override.
-- `workflow_dispatch` runs accept a `version` input instead of a tag, but
-  skip the metadata sync-back.
+- `Release` keeps a `workflow_dispatch` entry for emergency manual builds
+  (requires `version`, optional `tag`); dispatch runs skip the metadata
+  sync-back.
 
 ---
 

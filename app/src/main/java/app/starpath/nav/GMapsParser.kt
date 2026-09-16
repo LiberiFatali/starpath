@@ -29,6 +29,7 @@ object GMapsParser {
         text: String?,
         bigText: String?,
         textLines: List<String>,
+        subText: String? = null,
     ): NavUpdate? {
         val lines = buildList {
             title?.takeIf { it.isNotBlank() }?.let { add(it) }
@@ -55,6 +56,12 @@ object GMapsParser {
         val head = lines.first()
         val body = lines.getOrNull(1).orEmpty()
         val trip = lines.drop(2).firstOrNull { looksLikeTripLine(it) }.orEmpty()
+            .ifBlank {
+                // The "Maps • 44 min • 21 km • 20:02 ETA" header line: useful
+                // as trip info, but never as maneuver/distance (it carries
+                // *remaining* distance, not next-turn distance).
+                subText?.takeIf { it.isNotBlank() && looksLikeTripLine(it) }.orEmpty()
+            }
         val (distanceText, distanceMeters) = extractDistance(head)
             ?: extractDistance(body)
             ?: lines.drop(2).firstNotNullOfOrNull { extractDistance(it) }
@@ -68,45 +75,6 @@ object GMapsParser {
             distanceMeters = distanceMeters,
             street = extractStreet(head, body),
             tripLine = trip.ifBlank { body.takeIf { it != head }.orEmpty() },
-            state = NavState.ENROUTE,
-        )
-    }
-
-    /**
-     * Preferred entry point for [MapsRemoteParser]: the true instruction
-     * ("Turn left onto X"), distance ("200 m") and trip line come from
-     * separate RemoteViews fields, so no head/body guessing is needed.
-     */
-    fun parseRemote(
-        instruction: String,
-        distanceLine: String,
-        tripLine: String,
-    ): NavUpdate? {
-        if (instruction.isBlank() && distanceLine.isBlank() && tripLine.isBlank()) return null
-        if (instruction.isNotBlank() && isRerouting(instruction)) {
-            return NavUpdate(
-                maneuver = NavManeuver.UNKNOWN,
-                distanceText = "",
-                distanceMeters = null,
-                street = instruction,
-                tripLine = "",
-                state = NavState.REROUTING,
-            )
-        }
-        val (distanceText, distanceMeters) = extractDistance(instruction)
-            ?: extractDistance(distanceLine)
-            ?: ("" to null)
-        val street = extractStreet(
-            instruction.ifBlank { distanceLine.ifBlank { tripLine } },
-            "",
-        ).let { if (it == instruction) instruction else it }
-        return NavUpdate(
-            maneuver = if (instruction.isBlank()) NavManeuver.UNKNOWN
-            else detectManeuver(instruction),
-            distanceText = distanceText,
-            distanceMeters = distanceMeters,
-            street = street,
-            tripLine = tripLine,
             state = NavState.ENROUTE,
         )
     }
@@ -176,7 +144,10 @@ object GMapsParser {
                 NavManeuver.DESTINATION
             has("go straight", "straight ahead", "continue straight", "continue on", "stay on",
                 "đi thẳng") || has("tiếp tục")
-                || regex("""\bhead\s+(north|south|east|west|straight|up|towards?|for)\b""") ->
+                || regex("""\bhead\s+(north|south|east|west|straight|up|towards?|for)\b""")
+                // Bare "toward X" with no turn verb is Maps' continue-straight
+                // phrasing (turns always carry their verb, matched above).
+                || regex("""\btowards?\b""") ->
                 NavManeuver.STRAIGHT
             // Bare "continue" (e.g. "Continue on Nguyen Hue") implies straight.
             regex("""\bcontinue\b""") -> NavManeuver.STRAIGHT

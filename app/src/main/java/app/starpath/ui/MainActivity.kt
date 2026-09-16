@@ -1,9 +1,13 @@
 package app.starpath.ui
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +22,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import app.starpath.BuildConfig
 import app.starpath.nav.KeepAliveService
+import app.starpath.nav.LastParse
 import app.starpath.nav.NavFormatter
 import app.starpath.nav.NavManeuver
 import app.starpath.nav.NavNotifier
@@ -46,6 +51,7 @@ class MainActivity : Activity() {
 
     private lateinit var status: TextView
     private lateinit var setupButton: Button
+    private lateinit var lastParseView: TextView
     private var pendingStep = PendingStep.NONE
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +99,40 @@ class MainActivity : Activity() {
 
         addButton("Stop & Exit StarPath") {
             stopAndExit()
+        }
+
+        val debugHeader = TextView(this).apply {
+            textSize = 13f
+            text = "\nLast Maps notification (for wrong-direction reports):"
+            setPadding(0, 16, 0, 4)
+        }
+        layout.addView(debugHeader)
+        lastParseView = TextView(this).apply {
+            textSize = 12f
+            typeface = Typeface.MONOSPACE
+            setPadding(0, 0, 0, 4)
+        }
+        layout.addView(lastParseView)
+
+        addButton("↻ Refresh debug info") {
+            refreshLastParse()
+        }
+        addButton("⧉ Copy debug info") {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("StarPath debug", lastParseView.text))
+            Toast.makeText(this, "Debug info copied — paste it in your report", Toast.LENGTH_SHORT).show()
+        }
+        addButton("➦ Share debug info") {
+            startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, "StarPath wrong direction report")
+                        putExtra(Intent.EXTRA_TEXT, lastParseView.text.toString())
+                    },
+                    "Share debug info",
+                )
+            )
         }
 
         val individualSectionHeader = TextView(this).apply {
@@ -299,6 +339,13 @@ class MainActivity : Activity() {
         } else {
             setupButton.text = "Grant Permissions (1-Tap Setup)"
             setupButton.isEnabled = true
+        }
+        refreshLastParse()
+    }
+
+    private fun refreshLastParse() {
+        if (::lastParseView.isInitialized) {
+            lastParseView.text = LastParse.current
         }
     }
 }

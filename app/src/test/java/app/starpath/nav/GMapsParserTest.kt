@@ -130,34 +130,44 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `remote fields map to update`() {
-        val fields = MapsRemoteParser.pickFields(
-            mapOf(
-                "nav_title" to "200 m",
-                "nav_description" to "Turn left onto Nguyen Hue",
-                "nav_time" to "12 min · 3.2 km · 5:30 PM",
-            )
+    fun `bare toward is straight but never shadows verbs`() {
+        // Screenshot case: Maps posts "toward X" with a straight arrow.
+        assertEquals(
+            NavManeuver.STRAIGHT,
+            GMapsParser.detectManeuver("toward P. Nguyen Co Thach"),
         )
-        assertEquals("Turn left onto Nguyen Hue", fields.instruction)
-        assertEquals("200 m", fields.distanceLine)
-        val u = MapsRemoteParser.toUpdate(fields)!!
-        assertEquals(NavManeuver.TURN_LEFT, u.maneuver)
-        assertEquals("200 m", u.distanceText)
-        assertEquals(200, u.distanceMeters)
-        assertEquals("Nguyen Hue", u.street)
+        assertEquals(
+            NavManeuver.STRAIGHT,
+            GMapsParser.detectManeuver("Towards Nguyen Hue in 100 m"),
+        )
+        // Real verbs keep priority over "toward".
+        assertEquals(
+            NavManeuver.TURN_LEFT,
+            GMapsParser.detectManeuver("Turn left toward P. Nguyen Co Thach"),
+        )
+        assertEquals(
+            NavManeuver.EXIT,
+            GMapsParser.detectManeuver("Take exit 5 toward Long Bien"),
+        )
+        assertEquals(
+            NavManeuver.KEEP_RIGHT,
+            GMapsParser.detectManeuver("Keep right toward the ferry"),
+        )
     }
 
     @Test
-    fun `remote lockscreen fallback fields`() {
-        val fields = MapsRemoteParser.pickFields(
-            mapOf(
-                "title" to "500 m - Turn right",
-                "text" to "Le Loi · 10 min",
-            )
-        )
-        val u = MapsRemoteParser.toUpdate(fields)!!
-        assertEquals(NavManeuver.TURN_RIGHT, u.maneuver)
-        assertEquals("500 m", u.distanceText)
+    fun `subText feeds trip line only, never distance`() {
+        val u = GMapsParser.parse(
+            title = "P. Tran Van Can",
+            text = null,
+            bigText = null,
+            textLines = emptyList(),
+            subText = "Maps • 43 min • 15 km • 20:08 ETA",
+        )!!
+        assertEquals(NavManeuver.UNKNOWN, u.maneuver)
+        // Remaining-trip distance must not masquerade as turn distance.
+        assertEquals("", u.distanceText)
+        assertEquals("Maps • 43 min • 15 km • 20:08 ETA", u.tripLine)
     }
 
     @Test
