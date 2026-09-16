@@ -123,9 +123,8 @@ Notes:
 - Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
   (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
   migrated to a computed mapping.
-- Local builds use the checked-in fallback version; set
-  `APP_VERSION_NAME` / `APP_VERSION_CODE` (or `-PappVersionName` /
-  `-PappVersionCode`) to override.
+- Local builds use the checked-in version literals (kept literal so
+  F-Droid's checkupdates parser can read them).
 
 ---
 

@@ -5,14 +5,8 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val appVersionCode: Int =
-    System.getenv("APP_VERSION_CODE")?.toIntOrNull()
-        ?: providers.gradleProperty("appVersionCode").orNull?.toIntOrNull()
-        ?: 6
-val appVersionName: String =
-    System.getenv("APP_VERSION_NAME")
-        ?: providers.gradleProperty("appVersionName").orNull
-        ?: "0.6"
+val appVersionCode = 6
+val appVersionName = "0.6"
 
 val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = Properties().apply {
@@ -43,8 +37,8 @@ android {
         applicationId = "app.starpath"
         minSdk = 29
         targetSdk = 36
-        versionCode = appVersionCode
-        versionName = appVersionName
+        versionCode = 6
+        versionName = "0.6"
     }
 
     buildFeatures {

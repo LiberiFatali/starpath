@@ -98,9 +98,12 @@ jobs:
           path = "app/build.gradle.kts"
           text = open(path).read()
           # Literals must stay literal: F-Droid's checkupdates parser reads them.
-          new, n1 = re.subn(r"^(\s*)\?: \d+$", rf"\1?: {code}", text, count=1, flags=re.M)
-          new, n2 = re.subn(r"^(\s*)\?: \"[\d.]+\"$", rf'\1?: "{version}"', new, count=1, flags=re.M)
-          assert n1 == 1 and n2 == 1, "version literal lines not found"
+          # Keep val helpers (used for APK rename tasks) and defaultConfig in sync.
+          new, n1 = re.subn(r"^(val appVersionCode = )\d+$", rf"\g<1>{code}", text, count=1, flags=re.M)
+          new, n2 = re.subn(r'^(val appVersionName = ")[\d.]+"$', rf'\g<1>{version}"', new, count=1, flags=re.M)
+          new, n3 = re.subn(r"^(\s*versionCode = )\d+$", rf"\g<1>{code}", new, count=1, flags=re.M)
+          new, n4 = re.subn(r'^(\s*versionName = ")[\d.]+"$', rf'\g<1>{version}"', new, count=1, flags=re.M)
+          assert n1 == 1 and n2 == 1 and n3 == 1 and n4 == 1, "version literal lines not found"
           open(path, "w").write(new)
           sec = "SECURITY.md"
           stext = open(sec).read()
@@ -147,8 +150,6 @@ jobs:
           fi
           MINOR="${VERSION#0.}"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "APP_VERSION_NAME=$VERSION" >> "$GITHUB_ENV"
-          echo "APP_VERSION_CODE=$MINOR" >> "$GITHUB_ENV"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version_name=$VERSION" >> "$GITHUB_OUTPUT"
           echo "version_code=$MINOR" >> "$GITHUB_OUTPUT"
