@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.7 or v0.7). Only used for manual runs without a tag.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -19,6 +24,53 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW="${{ inputs.version }}"
+            if [ -z "$RAW" ]; then
+              echo "::error::workflow_dispatch requires the 'version' input (e.g. 0.7)."
+              exit 1
+            fi
+          else
+            RAW="$GITHUB_REF_NAME"
+          fi
+          TAG="$RAW"
+          # Accept with or without leading 'v'
+          VERSION="${RAW#v}"
+          if ! echo "$VERSION" | grep -Eq '^0\.[0-9]+$'; then
+            echo "::error::Unsupported version '$RAW'. Expected tag like v0.7 (versionName 0.MINOR, versionCode MINOR). Patch/major versions need the computed versionCode scheme migration."
+            exit 1
+          fi
+          MINOR="${VERSION#0.}"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "APP_VERSION_NAME=$VERSION" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$MINOR" >> "$GITHUB_ENV"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_code=$MINOR" >> "$GITHUB_OUTPUT"
+          echo "Resolved $RAW -> versionName=$VERSION versionCode=$MINOR"
+
+      - name: Ensure fastlane changelog exists
+        run: |
+          CHANGELOG="fastlane/metadata/android/en-US/changelogs/${{ steps.version.outputs.version_code }}.txt"
+          if [ -f "$CHANGELOG" ]; then
+            echo "Changelog $CHANGELOG already exists, leaving it."
+            exit 0
+          fi
+          TAG="${{ steps.version.outputs.tag }}"
+          PREV_TAG="$(git tag --list 'v*' --sort=-v:refname | grep -vx "$TAG" | head -n 1)"
+          {
+            echo "- Release ${{ steps.version.outputs.version_name }}."
+            if [ -n "$PREV_TAG" ]; then
+              git log "$PREV_TAG..HEAD" --format='- %s' --reverse | head -n 20
+            else
+              git log --format='- %s' --reverse | head -n 20
+            fi
+          } > "$CHANGELOG"
+          cat "$CHANGELOG"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -74,3 +126,48 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+      - name: Sync F-Droid metadata & changelog back to main
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version_name }}"
+          CODE="${{ steps.version.outputs.version_code }}"
+          SHA="$(git rev-list -n 1 "$TAG")"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B main origin/main
+          python3 - "$VERSION" "$CODE" "$SHA" <<'EOF'
+          import re, sys
+          version, code, sha = sys.argv[1], sys.argv[2], sys.argv[3]
+          path = "fdroid/app.starpath.yml"
+          text = open(path).read()
+          if f"versionName: '{version}'" in text:
+              print(f"fdroid metadata already contains {version}, skipping.")
+          else:
+              entry = (
+                  f"  - versionName: '{version}'\n"
+                  f"    versionCode: {code}\n"
+                  f"    commit: {sha}\n"
+                  f"    subdir: app\n"
+                  f"    gradle:\n"
+                  f"      - yes\n"
+              )
+              anchor = "AllowedAPKSigningKeys:"
+              assert anchor in text, "AllowedAPKSigningKeys anchor not found"
+              text = text.replace(anchor, entry + "\n" + anchor, 1)
+              text = re.sub(r"^CurrentVersion: '.*'$",
+                            f"CurrentVersion: '{version}'", text, count=1, flags=re.M)
+              text = re.sub(r"^CurrentVersionCode: .*$",
+                            f"CurrentVersionCode: {code}", text, count=1, flags=re.M)
+              open(path, "w").write(text)
+              print(f"fdroid metadata updated to {version} ({code}).")
+          EOF
+          git add "fastlane/metadata/android/en-US/changelogs/$CODE.txt" fdroid/app.starpath.yml
+          if git diff --cached --quiet; then
+            echo "Nothing to sync, skipping commit."
+            exit 0
+          fi
+          git commit -m "chore(fdroid): sync metadata for $TAG [skip ci]"
+          git pull --rebase origin main
+          git push origin main

@@ -93,6 +93,41 @@ fun `parses localized maneuver correctly`() {
 
 ---
 
+## 🏷️ Releasing a New Version
+
+Releases are driven by git tags. The tag is the source of truth — no manual
+version-bump commit is needed before tagging.
+
+```bash
+git checkout main
+git pull
+git tag v0.7
+git push origin v0.7
+```
+
+The `Release` workflow then:
+
+1. Derives `versionName` / `versionCode` from the tag (`v0.7` → name `0.7`,
+   code `7`) and builds the signed APK/AAB with those values.
+2. Creates the GitHub Release with checksums.
+3. Syncs back to `main` (bot commit): a fastlane changelog stub at
+   `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if missing)
+   and a new `Builds` entry plus `CurrentVersion` fields in
+   `fdroid/app.starpath.yml`.
+
+Notes:
+
+- Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
+  (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
+  migrated to a computed mapping.
+- Local builds default to the checked-in fallback version; set
+  `APP_VERSION_NAME` / `APP_VERSION_CODE` (or `-PappVersionName` /
+  `-PappVersionCode`) to override.
+- `workflow_dispatch` runs accept a `version` input instead of a tag, but
+  skip the metadata sync-back.
+
+---
+
 ## 📜 License Reference
 
 By contributing to StarPath, you agree that your contributions will be licensed under the project's [GNU General Public License v3.0](LICENSE).
