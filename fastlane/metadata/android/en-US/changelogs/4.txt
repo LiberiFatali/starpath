@@ -1,2 +1,0 @@
-- Fix F-Droid compatibility by removing the AGP dependency-metadata block from APK/AAB.
-- No user-facing changes.

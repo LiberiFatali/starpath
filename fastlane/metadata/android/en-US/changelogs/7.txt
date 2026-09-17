@@ -1,3 +1,0 @@
-- Release 0.7.
-- chore(release): align fdroid 0.6 entry with tag
-- release: bump to v0.7

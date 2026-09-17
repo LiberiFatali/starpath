@@ -1,2 +1,0 @@
-- Fix CI and release builds by ensuring required Android 36 SDK packages are installed.
-- No user-facing changes.

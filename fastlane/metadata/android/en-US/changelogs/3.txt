@@ -1,7 +1,0 @@
-- Initial release of StarPath.
-- Real-time turn extraction from Google Maps navigation notifications.
-- High-contrast directional badges optimized for Amazfit round screens.
-- Smart distance milestone alerts (500m, 200m, 100m, 50m) and 18s stay-awake pulses.
-- Automatic background lifecycle management.
-- Support for English and Vietnamese navigation directions.
-- 100% offline, zero data collection.

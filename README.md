@@ -27,8 +27,10 @@
 ## ⌚ Compatibility
 
 **Tested:** Amazfit Active 2 (Round) + Android phone — full turn/vibrate/wake verified.
-**Expected to work:** any watch paired via the Zepp App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families). The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` otherwise); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `?`).
-See **[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)** for details and how to report your model.
+
+**Expected to work:** any watch paired via the Zepp App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families).
+
+The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` otherwise); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `?`).
 
 ---
 
