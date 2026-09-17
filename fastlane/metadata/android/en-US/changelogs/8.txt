@@ -1,0 +1,4 @@
+- Release 0.8.
+- chore(fdroid): sync metadata for v0.7 [skip ci]
+- feat(nav): add ASCII arrow toggle and expand compatibility
+- release: bump to v0.8
