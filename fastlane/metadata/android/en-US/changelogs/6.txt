@@ -7,3 +7,10 @@
 - feat(release): automate release process and versioning
 - chore(fdroid): sync metadata for v0.6 [skip ci]
 - feat(nav): add arrow icon classifier and release workflow
+- refactor(release): collapse to single Release workflow
+- chore(fdroid): sync metadata for v0.6 [skip ci]
+- feat(release): abort early when no new changes since latest tag
+- fix(build): use static version literals in build.gradle.kts
+- docs(repo): add AGENTS.md guardrails and rules
+- docs(repo): reorganize documentation and add blog post
+- refactor(nav): remove unused ArrowBitmapGenerator
