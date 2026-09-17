@@ -49,11 +49,11 @@ class NavNotifier(private val context: Context) {
      *   Distance/ETA refreshes pass false (silent update).
      */
     fun post(card: NavFormatter.Card, alert: Boolean) {
-        val arrowBitmap = ArrowBitmapGenerator.createArrowBitmap(card.maneuver)
-
+        // Text-only card: Zepp forwards title/text over BLE to the watch;
+        // largeIcon bitmaps never reach the Amazfit Active 2, so no
+        // outbound bitmap is attached (payload + allocation savings).
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .setLargeIcon(arrowBitmap)
             .setContentTitle(card.title)
             .setContentText(card.text)
             .setSubText(card.sub.takeIf { it.isNotBlank() })

@@ -31,12 +31,6 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 │                                        │               │
 │                                        ▼               │
 │                            ┌───────────────────────┐   │
-│                            │  ArrowBitmapGenerator │   │
-│                            │   (High-Contrast UI)  │   │
-│                            └───────────┬───────────┘   │
-│                                        │               │
-│                                        ▼               │
-│                            ┌───────────────────────┐   │
 │                            │      NavNotifier      │   │
 │                            │  (Re-post Glance Card)│   │
 │                            └───────────┬───────────┘   │
@@ -86,14 +80,14 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
   3. **Stay-Awake Pulse:** If within `300 m` of an active turn and the watch screen has likely turned off (elapsed time ≥ 18s), sends a gentle alert pulse to refresh the card on the watch screen.
   4. **Cruising Straight:** Suppresses milestone alerts while maintaining a long straight path to prevent unnecessary vibrations and battery drain.
 
-### `ArrowBitmapGenerator`
-* **File:** `app/src/main/java/app/starpath/nav/ArrowBitmapGenerator.kt`
-* **Role:** Renders high-contrast directional icons for the **phone-side**
-  notification shade (`largeIcon`). Note: on the Amazfit Active 2 these
-  bitmaps do **not** reach the watch — Zepp App Alerts forwards only
-  notification **text** (title/body), so the watch direction comes from the
-  text glyphs (`◀◀`/`▶▶`/`▲▲`/`?`) produced by `NavFormatter`, never from
-  images. See §5 for why this matters.
+### `NavNotifier`
+* **File:** `app/src/main/java/app/starpath/nav/NavNotifier.kt`
+* **Role:** Re-posts the parsed state as a **text-only** glance card
+  (`title`/`text`/`sub` with `◀◀`/`▶▶`/`▲▲`/`?` glyphs). No `largeIcon`
+  bitmap is attached: Zepp forwards only notification text to the
+  Amazfit Active 2, so outbound bitmaps were dead payload/CPU.
+  Inbound Maps arrow pixels are still read via `MapsRemoteParser` +
+  `IconClassifier` and re-emitted as glyphs (see §5).
 
 ### `KeepAliveService`
 * **File:** `app/src/main/java/app/starpath/nav/KeepAliveService.kt`
@@ -197,8 +191,8 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text glyph**.
    Maps never points backwards, so there is no down-head. Thickness, dash
    style, and shift cancel out. The 16×16 mask and per-direction scores are
    logged to the `LastParse` debug dump for field harvesting.
-3. **`UNKNOWN → ?`**: never a fake straight arrow — neither in the glyph nor
-   in the phone-shade bitmap (`ArrowBitmapGenerator` draws a distinct `?`).
+3. **`UNKNOWN → ?`**: never a fake straight arrow — the glyph renders
+   a distinct `?`.
 
 **Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
 `▲▲` correct; icon-only `40 m` + street + left-hook → `◀◀` via moments;
