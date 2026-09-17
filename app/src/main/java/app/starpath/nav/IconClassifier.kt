@@ -6,7 +6,7 @@ package app.starpath.nav
  * Why this exists: on the Amazfit Active 2 (Zepp App Alerts) only notification
  * **text** reaches the watch — images such as `largeIcon` do not. And Maps
  * often posts icon-only instructions ("40 m" + street name, no turn verb —
- * see screenshots in IMPLEMENTATION.md §5), so keyword parsing yields UNKNOWN.
+ * see screenshots in docs/IMPLEMENTATION.md §5), so keyword parsing yields UNKNOWN.
  * The arrow pixels are then the only direction signal. This classifier runs
  * on-phone, converts the icon to a maneuver, and the maneuver is rendered as
  * a **text glyph** (`◀◀ 40 m`) which is what the watch actually displays.

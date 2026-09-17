@@ -9,7 +9,7 @@ do not duplicate them here.
   `ANDROID_HOME` or `local.properties`.
 - Commands: see `README.md § How to Build`. Parser workflow (capture →
   test → verify): see `CONTRIBUTING.md § Adding a New Language` and
-  `IMPLEMENTATION.md §4–5`.
+  `docs/IMPLEMENTATION.md §4–5`.
 - After nav/parser changes, run `./gradlew :app:testDebugUnitTest`.
 - Never commit `*.apk` / `*.aab` / `*.jks`, `local.properties`,
   or `keystore.properties` (all gitignored). Never ask for signing secrets;
@@ -40,7 +40,7 @@ do not duplicate them here.
 
 ## Architecture guardrails
 
-See `IMPLEMENTATION.md` (canonical) and `PRIVACY_POLICY.md`.
+See `docs/IMPLEMENTATION.md` (canonical) and `docs/PRIVACY_POLICY.md`.
 
 - Zero-network, on-device, ephemeral processing. No analytics, trackers,
   logging of personal data, or persistent storage of notification content.

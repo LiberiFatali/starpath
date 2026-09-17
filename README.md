@@ -1,8 +1,10 @@
 # ★ StarPath - Google Maps turns on Amazfit Active 2
 
-> **Why:** Amazfit Active 2 has no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket.
->
-> **How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`◀◀ 200 m / Nguyen Hue`) that the Zepp app mirrors to your watch over Bluetooth.
+**Why:** [Amazfit Active 2](https://us.amazfit.com/products/active-2-round) has no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket.
+
+<img src="docs/assets/arrow/3_maps_starpath_turn_right.jpg" alt="Glanceable Card" width="360" />
+
+**How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`◀◀ 200 m / Nguyen Hue`) that the Zepp app mirrors to your watch over Bluetooth.
 
 ---
 
@@ -50,9 +52,10 @@ Output artifacts:
 
 ## 📚 Documentation
 
-- **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Architectural diagrams, component roles, stay-awake pulse algorithms, and developer debugging steps.
+- **[docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)** — Architectural diagrams, component roles, stay-awake pulse algorithms, and developer debugging steps.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, notification capture guide, and PR guidelines.
-- **[PRIVACY_POLICY.md](PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero telemetry).
+- **[docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero telemetry).
+- **[docs/blog-watch-missed-turn.md](docs/blog-watch-missed-turn.md)** — Blog post: how arrow-pixel recognition learned to read Maps turn icons.
 
 ---
 
