@@ -5,8 +5,8 @@ package app.starpath.nav
  * watch (e.g. Amazfit Active 2, 466×466 round): title must fit without
  * scrolling, with large prominent arrows.
  *
- * Display model is 4-state: `◀◀ / ▶▶ / ▲▲ / ?` (or `<- / -> / ^ / ?` in
- * ASCII mode). Parser detail (slight/sharp/keep/U-turn/roundabout/exit)
+ * Display model is 5-state: `◀◀ / ▶▶ / ▲▲ / DEST / ?` (or `<- / -> / ^ / DEST / ?` in
+ * ASCII mode). Parser detail (slight/sharp/keep/U-turn)
  * collapses here via [NavManeuver.canonical] — never a fake arrow.
  */
 object NavFormatter {
@@ -14,7 +14,7 @@ object NavFormatter {
     const val PREFS_FILE = "starpath_prefs"
     const val PREF_ASCII_ARROWS = "ascii_arrows"
 
-    /** e.g. "◀◀ 200 m" / "▲▲ 1.2 km" / "? 200 m" (ASCII: "<- 200 m") */
+    /** e.g. "◀◀ 200 m" / "▲▲ 1.2 km" / "DEST" / "? 200 m" (ASCII: "<- 200 m") */
     fun title(update: NavUpdate, useAscii: Boolean = false): String {
         if (update.state == NavState.REROUTING) return "… Rerouting"
         val mark = update.maneuver.displayMark(useAscii)

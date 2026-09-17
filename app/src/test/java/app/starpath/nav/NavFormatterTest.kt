@@ -18,7 +18,7 @@ class NavFormatterTest {
         assertEquals("▲▲ 5 km", NavFormatter.title(straight))
 
         val dest = NavUpdate(NavManeuver.DESTINATION, "", 0, "Home", "", NavState.ENROUTE)
-        assertEquals("?", NavFormatter.title(dest))
+        assertEquals("DEST", NavFormatter.title(dest))
 
         val reroute = NavUpdate(NavManeuver.UNKNOWN, "", null, "", "", NavState.REROUTING)
         assertEquals("… Rerouting", NavFormatter.title(reroute))
@@ -49,11 +49,11 @@ class NavFormatterTest {
         )
         assertEquals(
             "? 500 m",
-            NavFormatter.title(NavUpdate(NavManeuver.ROUNDABOUT, "500 m", 500, "St", "", NavState.ENROUTE)),
+            NavFormatter.title(NavUpdate(NavManeuver.UNKNOWN, "500 m", 500, "St", "", NavState.ENROUTE)),
         )
         assertEquals(
             "? 1 km",
-            NavFormatter.title(NavUpdate(NavManeuver.EXIT, "1 km", 1000, "St", "", NavState.ENROUTE)),
+            NavFormatter.title(NavUpdate(NavManeuver.UNKNOWN, "1 km", 1000, "St", "", NavState.ENROUTE)),
         )
     }
 
@@ -70,9 +70,8 @@ class NavFormatterTest {
         assertEquals("-> 200 m", asciiTitle(NavManeuver.SHARP_RIGHT, "200 m"))
         assertEquals("^ 2 km", asciiTitle(NavManeuver.STRAIGHT, "2 km"))
         assertEquals("?", asciiTitle(NavManeuver.UTURN, ""))
-        assertEquals("?", asciiTitle(NavManeuver.ROUNDABOUT, ""))
-        assertEquals("?", asciiTitle(NavManeuver.EXIT, ""))
-        assertEquals("?", asciiTitle(NavManeuver.DESTINATION, ""))
+        assertEquals("?", asciiTitle(NavManeuver.UNKNOWN, ""))
+        assertEquals("DEST", asciiTitle(NavManeuver.DESTINATION, ""))
         assertEquals("? 200 m", asciiTitle(NavManeuver.UNKNOWN, "200 m"))
     }
 

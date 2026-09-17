@@ -141,6 +141,28 @@ class IconClassifierTest {
         )
 
         val THICK_RIGHT_FIELD = THICK_LEFT_FIELD.map { it.reversed() }
+
+        /** Field mask from maps_starpath_destination_left dump: pin+road, wide bottom. */
+        val DEST_PIN_LEFT = listOf(
+            "...###..........",
+            ".#######........",
+            ".########.......",
+            "###.#####.......",
+            "######.##.......",
+            "######.##.......",
+            ".##...###.......",
+            ".###..########..",
+            ".###.#########..",
+            "..#############.",
+            "...############.",
+            "...############.",
+            "......##########",
+            "......##########",
+            "......##########",
+            "................",
+        )
+
+        val DEST_PIN_RIGHT = DEST_PIN_LEFT.map { it.reversed() }
     }
 
     @Test
@@ -209,6 +231,18 @@ class IconClassifierTest {
     }
 
     @Test
+    fun `destination pin mirrors both collapse to one dest`() {
+        // Field regression maps_starpath_destination_left/right: pin+road
+        // largeIcon mimicked a large moment delta (L=0.90 / R=0.88).
+        val left = IconClassifier.classify(pixelsFromArt(DEST_PIN_LEFT))
+        assertEquals(NavManeuver.DESTINATION, left.maneuver)
+        assertTrue("score=${left.score}", left.score >= IconClassifier.HEAD_THRESHOLD)
+        val right = IconClassifier.classify(pixelsFromArt(DEST_PIN_RIGHT))
+        assertEquals(NavManeuver.DESTINATION, right.maneuver)
+        assertTrue("score=${right.score}", right.score >= IconClassifier.HEAD_THRESHOLD)
+    }
+
+    @Test
     fun `down chevron is unknown`() {
         val m = IconClassifier.classify(pixelsFromArt(DOWN_CHEVRON))
         assertEquals(NavManeuver.UNKNOWN, m.maneuver)
@@ -227,7 +261,12 @@ class IconClassifierTest {
         assertEquals(16, d.maskArt.lines().size)
         assertTrue(d.maskArt.contains('#'))
         assertEquals(
-            setOf(NavManeuver.TURN_LEFT, NavManeuver.TURN_RIGHT, NavManeuver.STRAIGHT),
+            setOf(
+                NavManeuver.TURN_LEFT,
+                NavManeuver.TURN_RIGHT,
+                NavManeuver.STRAIGHT,
+                NavManeuver.DESTINATION,
+            ),
             d.scores.keys,
         )
     }

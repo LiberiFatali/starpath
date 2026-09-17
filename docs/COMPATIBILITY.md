@@ -24,11 +24,11 @@ Do Not Disturb off.
 
 The watch shows 3 essential directions:
 
-- `◀◀` left, `▶▶` right, `▲▲` straight, `?` otherwise (U-turn, roundabout,
-  exit without a side, destination, unknown — the street text still carries
+- `◀◀` left, `▶▶` right, `▲▲` straight, `DEST` destination, `?` otherwise (U-turn,
+  roundabout/exit text without a side, unknown — the street text still carries
   the detail, e.g. "Make a U-turn…").
 - If arrows show as boxes on your watch, enable **ASCII arrows** in
-  StarPath: `<-` / `->` / `^` / `?`.
+  StarPath: `<-` / `->` / `^` / `DEST` / `?`.
 
 Small or square screens may wrap the street/trip lines; the title
 (direction + distance) always fits.

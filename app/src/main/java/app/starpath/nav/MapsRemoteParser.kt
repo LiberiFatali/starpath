@@ -99,6 +99,7 @@ object MapsRemoteParser {
                     val tag = when (m) {
                         NavManeuver.TURN_LEFT -> "L"
                         NavManeuver.TURN_RIGHT -> "R"
+                        NavManeuver.DESTINATION -> "D"
                         else -> "U"
                     }
                     "$tag=%.2f".format(s)

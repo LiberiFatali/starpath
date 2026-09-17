@@ -51,7 +51,7 @@ adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.
 
 ### 2. Add Keywords to Parser
 Edit [`app/src/main/java/app/starpath/nav/GMapsParser.kt`](app/src/main/java/app/starpath/nav/GMapsParser.kt):
-- Add maneuver keywords to regex patterns (e.g. left/right/straight/roundabout keywords).
+- Add maneuver keywords to regex patterns (e.g. left/right/straight keywords).
 - Add distance units if your language uses localized symbols.
 
 ### 3. Add Unit Tests

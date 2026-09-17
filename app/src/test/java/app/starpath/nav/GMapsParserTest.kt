@@ -35,10 +35,25 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `roundabout and uturn`() {
+    fun `roundabout exit and uturn`() {
+        // Roundabouts and exits carry no side for the watch: UNKNOWN (?).
+        // Guards stay ahead of the straight branch so "toward" in exit
+        // strings must not fake a straight arrow.
         assertEquals(
-            NavManeuver.ROUNDABOUT,
+            NavManeuver.UNKNOWN,
             GMapsParser.parse("At the roundabout, take the 2nd exit in 500 m", null, null, emptyList())!!.maneuver,
+        )
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.parse("Take exit 5 toward Long Bien in 1 km", null, null, emptyList())!!.maneuver,
+        )
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.parse("Take the ramp onto Highway 1 in 500 m", null, null, emptyList())!!.maneuver,
+        )
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.parse("Merge onto Highway 1 in 500 m", null, null, emptyList())!!.maneuver,
         )
         assertEquals(
             NavManeuver.UTURN,
@@ -120,9 +135,9 @@ class GMapsParserTest {
     fun `expanded maneuver vocabulary`() {
         assertEquals(NavManeuver.SLIGHT_LEFT, GMapsParser.detectManeuver("Bear left in 100 m"))
         assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Bear right onto ramp"))
-        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Take the ramp onto Highway 1"))
-        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Merge onto Highway 1 in 500 m"))
-        assertEquals(NavManeuver.EXIT, GMapsParser.detectManeuver("Take exit 5 in 1 km"))
+        assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Take the ramp onto Highway 1"))
+        assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Merge onto Highway 1 in 500 m"))
+        assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Take exit 5 in 1 km"))
         assertEquals(NavManeuver.KEEP_LEFT, GMapsParser.detectManeuver("Giữ làn trái"))
         assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Chếch phải"))
         // Trip summary must not false-positive on "km left".
@@ -146,7 +161,7 @@ class GMapsParserTest {
             GMapsParser.detectManeuver("Turn left toward P. Nguyen Co Thach"),
         )
         assertEquals(
-            NavManeuver.EXIT,
+            NavManeuver.UNKNOWN,
             GMapsParser.detectManeuver("Take exit 5 toward Long Bien"),
         )
         assertEquals(

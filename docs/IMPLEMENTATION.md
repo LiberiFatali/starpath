@@ -65,7 +65,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **File:** `app/src/main/java/app/starpath/nav/GMapsParser.kt`
 * **Role:** Pure functional parser that translates Google Maps notification text into structured `NavUpdate` objects.
 * **Capabilities:**
-  - **Maneuver Detection:** Identifies turns (left, right, slight, sharp), U-turns, highway ramps/exits, roundabouts, and arrivals.
+  - **Maneuver Detection:** Identifies turns (left, right, slight, sharp), U-turns, and arrivals. Roundabout/exit instructions carry no side for the watch and parse as `UNKNOWN` (`?`).
   - **Bilingual Parsing:** Supports English (`Turn left`, `In 200 m`, `Head north`) and Vietnamese (`Rẽ trái`, `Đi về hướng`, `Nhập vào`).
   - **Distance Extraction:** Parses meters, kilometers, feet, and miles, standardizing them into an integer `distanceMeters` for milestone calculations.
   - **Status States:** Identifies rerouting states, searching for GPS, and final arrival.
@@ -190,19 +190,23 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
    compares first-order moments: `delta = topMeanX − bottomMeanX`
    (top-half mean-x minus bottom-half mean-x). `delta ≤ −1.5 → TURN_LEFT`,
    `delta ≥ +1.5 → TURN_RIGHT` (confidence `0.60 + |delta| × 0.07`, capped
-   at `0.95`); otherwise a centered mass with a narrow top apex → `STRAIGHT`
-   (`0.80`), else `?` (never U-turn or roundabout from
-   pixels). Masks shorter than 8 rows (chevrons, lone heads) are `UNKNOWN`;
+    at `0.95`); a wide bottom block (>8 cells — the pin+road largeIcon, both
+    mirrors) → `DESTINATION` (`0.85`, renders as `DEST`); otherwise a centered
+    mass with a narrow top apex → `STRAIGHT`
+    (`0.80`), else `?` (never U-turn from
+    pixels). Masks shorter than 8 rows (chevrons, lone heads) are `UNKNOWN`;
    Maps never points backwards, so there is no down-head. Thickness, dash
    style, and shift cancel out. The 16×16 mask and per-direction scores are
    logged to the `LastParse` debug dump for field harvesting.
 3. **`UNKNOWN → ?`**: never a fake straight arrow — the mark renders
-   a distinct `?`. Display collapses to 3 essential directions
-   (`◀◀ / ▶▶ / ▲▲`, ASCII `<- / -> / ^`): left/right families
-   (slight/sharp/keep) share the plain turn mark; U-turn, roundabout, exit,
-   and destination render as `?` (U-turn text is still detected by the parser
-   — Maps does send it, rarely, text-only — but the notification carries no
-   side, so the display stays `?`).
+    a distinct `?`. Display is `◀◀ / ▶▶ / ▲▲ / DEST / ?`
+    (ASCII `<- / -> / ^ / DEST / ?`): left/right families
+    (slight/sharp/keep) share the plain turn mark; the destination pin icon
+    renders as `DEST`; U-turn and roundabout/exit text render as `?`
+    (U-turn text is still detected by the parser
+    — Maps does send it, rarely, text-only — but the notification carries no
+    side, so the display stays `?`). Strict dedup re-posts only on
+    direction/place/state change, so 10–20 m countdown ticks are skipped.
 
 **Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
 `▲▲` correct; icon-only `40 m` + street + left-hook → `◀◀` via moments;

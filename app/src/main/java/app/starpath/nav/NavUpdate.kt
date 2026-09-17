@@ -1,6 +1,6 @@
 package app.starpath.nav
 
-enum class NavState { ENROUTE, REROUTING, STOPPED }
+enum class NavState { ENROUTE, REROUTING }
 
 /**
  * One parsed navigation snapshot from the Google Maps notification.

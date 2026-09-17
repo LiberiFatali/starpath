@@ -131,13 +131,17 @@ object GMapsParser {
                 || has("hơi") && has("trái") -> NavManeuver.SLIGHT_LEFT
             has("slight right", "bear right", "rẽ nhẹ phải", "chếch phải", "nghiêng phải")
                 || has("hơi") && has("phải") -> NavManeuver.SLIGHT_RIGHT
+            // Roundabouts and exits carry no side for the watch display — keep
+            // these guards ahead of the exit/turn/straight branches so e.g.
+            // "At the roundabout, take the 2nd exit…" or "Take exit 5 toward…"
+            // stay UNKNOWN instead of falling into EXIT/STRAIGHT.
             has("roundabout", "rotary", "traffic circle", "vòng xuyến", "bùng binh", "vòng xoay") ->
-                NavManeuver.ROUNDABOUT
+                NavManeuver.UNKNOWN
             has("keep left", "stay left", "giữ bên trái", "giữ làn trái") -> NavManeuver.KEEP_LEFT
             has("keep right", "stay right", "giữ bên phải", "giữ làn phải") -> NavManeuver.KEEP_RIGHT
             regex("""\bexit\b""") || has("take the exit", "take exit", "off ramp", "lối ra", "ra khỏi")
                 || has("take the ramp", "take ramp", "merge onto", "merge on", "nhập vào") ->
-                NavManeuver.EXIT
+                NavManeuver.UNKNOWN
             has("turn left", "rẽ trái") -> NavManeuver.TURN_LEFT
             has("turn right", "rẽ phải") -> NavManeuver.TURN_RIGHT
             has("arriv", "destination", "đến nơi", "đã đến", "you have arrived") ->

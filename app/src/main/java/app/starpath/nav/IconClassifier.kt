@@ -24,8 +24,8 @@ package app.starpath.nav
  * Thickness, dash style, and shift cancel out — which is exactly what
  * defeated both the old whole-icon templates and the triangle-head matcher
  * (thick corners matched `<` and `>` equally at 0.95).
- * Emits only TURN_LEFT / TURN_RIGHT / STRAIGHT / UNKNOWN — never UTURN or
- * ROUNDABOUT from pixels (UTURN stays reachable via text keywords).
+ * Emits TURN_LEFT / TURN_RIGHT / STRAIGHT / DESTINATION / UNKNOWN — never
+ * UTURN from pixels (UTURN stays reachable via text keywords).
  */
 object IconClassifier {
 
@@ -36,6 +36,16 @@ object IconClassifier {
     internal const val TURN_DELTA = 1.5
     /** Bounding-box height below this carries no direction (chevrons, heads). */
     internal const val MIN_HEIGHT = 8
+    /**
+     * Widest foreground run allowed in the bottom half for a turn verdict.
+     * Real hooks end in a ≤6-cell shaft (thick field hooks peak at 6); the
+     * Maps destination pin (pin+road) fills 10+ cells down there and otherwise
+     * mimics a large top-vs-bottom moment delta. Both mirrors (mass left or
+     * right) collapse to a single DESTINATION verdict (renders as `DEST`).
+     */
+    internal const val MAX_BOTTOM_WIDTH = 8
+    /** Confidence for the destination-pin verdict (fixed, shape-gated). */
+    internal const val PIN_SCORE = 0.85
 
     /** Raw pixels in row-major `0xAARRGGBB`, as returned by `Bitmap.getPixels`. */
     data class IconPixels(
@@ -78,6 +88,7 @@ object IconClassifier {
             NavManeuver.TURN_LEFT to if (maneuver == NavManeuver.TURN_LEFT) score else 0.0,
             NavManeuver.TURN_RIGHT to if (maneuver == NavManeuver.TURN_RIGHT) score else 0.0,
             NavManeuver.STRAIGHT to if (maneuver == NavManeuver.STRAIGHT) score else 0.0,
+            NavManeuver.DESTINATION to if (maneuver == NavManeuver.DESTINATION) score else 0.0,
         )
         return if (maneuver != NavManeuver.UNKNOWN && score >= HEAD_THRESHOLD) {
             Detail(maneuver, score, scores, art)
@@ -118,6 +129,15 @@ object IconClassifier {
         if (allN == 0 || maxY < 0) return NavManeuver.UNKNOWN to 0.0
         if (maxY - minY + 1 < MIN_HEIGHT) return NavManeuver.UNKNOWN to 0.0
         if (topN == 0 || botN == 0) return NavManeuver.UNKNOWN to 0.0
+        // Destination pin: wide road block in the bottom half is not a shaft.
+        // Sign-agnostic: left and right mirrors both land here as one DEST.
+        var botMaxWidth = 0
+        for (y in GRID / 2 until GRID) {
+            var c = 0
+            for (x in 0 until GRID) if (norm[y * GRID + x]) c++
+            if (c > botMaxWidth) botMaxWidth = c
+        }
+        if (botMaxWidth > MAX_BOTTOM_WIDTH) return NavManeuver.DESTINATION to PIN_SCORE
         val topMean = topSum.toDouble() / topN
         val botMean = botSum.toDouble() / botN
         val delta = topMean - botMean

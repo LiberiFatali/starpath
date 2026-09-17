@@ -61,7 +61,7 @@ Thickness cancels out. Dashes cancel out. Shift cancels out. The subtraction kee
 
 The order matters more than any single check:
 
-1. Trust words first. They name U-turns, roundabouts, and exits best.
+1. Trust words first. They name U-turns best.
 2. Trust pixels second, and only when words stay silent.
 3. Show `?` when both stay silent.
 

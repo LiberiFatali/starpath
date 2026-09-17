@@ -13,6 +13,7 @@ class StarPathListener : NotificationListenerService() {
     private lateinit var notifier: NavNotifier
     private val alertManager = NavAlertManager()
     private var mapsActive = false
+    internal var lastPosted: NavUpdate? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -35,6 +36,13 @@ class StarPathListener : NotificationListenerService() {
         LastParse.store(outcome)
         val update = outcome.update ?: return
 
+        // Strict dedup: Maps re-posts every 10–20 m with only the distance
+        // shrinking. The parsed update already splits direction (maneuver)
+        // from place (street), so skip re-posts whose canonical direction +
+        // normalized street + state match the last card — even milestones.
+        // Distance title intentionally freezes between turns to stop watch spam.
+        if (NavDedup.isRedundant(update, lastPosted)) return
+
         if (!mapsActive) {
             mapsActive = true
             KeepAliveService.start(this)
@@ -42,15 +50,15 @@ class StarPathListener : NotificationListenerService() {
 
         val alertDecision = alertManager.evaluate(update)
 
-        // Always re-post: Maps can change direction faster than the parsed
-        // card content visibly changes (truncation/rounding can mask a real
-        // difference), so identical consecutive cards must still forward.
-        // Display collapses to left/right/straight/?; ASCII mode is a
+        // Strict dedup compares full update.street (not the truncated card
+        // text), so truncation can't mask a real street change. Display
+        // collapses to left/right/straight/?; ASCII mode is a
         // MainActivity-only toggle for watches missing arrow glyphs.
         val useAscii = getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
             .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
         val card = NavFormatter.toCard(update, useAscii)
         notifier.post(card, alert = alertDecision.shouldAlert)
+        lastPosted = update
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
@@ -66,6 +74,7 @@ class StarPathListener : NotificationListenerService() {
         if (!stillThere) {
             mapsActive = false
             alertManager.reset()
+            lastPosted = null
             notifier.cancel()
             KeepAliveService.stop(this)
         }
