@@ -144,6 +144,21 @@ class NavAlertManagerTest {
     }
 
     @Test
+    fun `left variants share one display mark and do not re-alert`() {
+        alertManager.evaluate(
+            NavUpdate(NavManeuver.TURN_LEFT, "600 m", 600, "Nguyen Hue", "", NavState.ENROUTE),
+            currentTimeMs = 1000L,
+        )
+        // Same canonical left, same distance: silent (no maneuver change).
+        val d = alertManager.evaluate(
+            NavUpdate(NavManeuver.SLIGHT_LEFT, "600 m", 600, "Nguyen Hue", "", NavState.ENROUTE),
+            currentTimeMs = 2000L,
+        )
+        assertFalse(d.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.NONE, d.reason)
+    }
+
+    @Test
     fun `reset clears tracking state`() {
         alertManager.evaluate(
             NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Street", "", NavState.ENROUTE),

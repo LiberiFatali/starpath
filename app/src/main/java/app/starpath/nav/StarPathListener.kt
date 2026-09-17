@@ -45,7 +45,11 @@ class StarPathListener : NotificationListenerService() {
         // Always re-post: Maps can change direction faster than the parsed
         // card content visibly changes (truncation/rounding can mask a real
         // difference), so identical consecutive cards must still forward.
-        val card = NavFormatter.toCard(update)
+        // Display collapses to left/right/straight/?; ASCII mode is a
+        // MainActivity-only toggle for watches missing arrow glyphs.
+        val useAscii = getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
+            .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
+        val card = NavFormatter.toCard(update, useAscii)
         notifier.post(card, alert = alertDecision.shouldAlert)
     }
 

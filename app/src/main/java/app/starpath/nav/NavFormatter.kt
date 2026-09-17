@@ -2,16 +2,24 @@ package app.starpath.nav
 
 /**
  * Formats a [NavUpdate] into the glanceable card that Zepp forwards to the
- * Active 2 (466×466 round): title must fit without scrolling, with large prominent arrows.
+ * watch (e.g. Amazfit Active 2, 466×466 round): title must fit without
+ * scrolling, with large prominent arrows.
+ *
+ * Display model is 4-state: `◀◀ / ▶▶ / ▲▲ / ?` (or `<- / -> / ^ / ?` in
+ * ASCII mode). Parser detail (slight/sharp/keep/U-turn/roundabout/exit)
+ * collapses here via [NavManeuver.canonical] — never a fake arrow.
  */
 object NavFormatter {
 
-    /** e.g. "◀◀ 200 m" / "▲▲ 1.2 km" / "🏁" */
-    fun title(update: NavUpdate): String {
+    const val PREFS_FILE = "starpath_prefs"
+    const val PREF_ASCII_ARROWS = "ascii_arrows"
+
+    /** e.g. "◀◀ 200 m" / "▲▲ 1.2 km" / "? 200 m" (ASCII: "<- 200 m") */
+    fun title(update: NavUpdate, useAscii: Boolean = false): String {
         if (update.state == NavState.REROUTING) return "… Rerouting"
-        val glyph = update.maneuver.glyph
-        return if (update.distanceText.isBlank()) glyph
-        else "$glyph ${update.distanceText}"
+        val mark = update.maneuver.displayMark(useAscii)
+        return if (update.distanceText.isBlank()) mark
+        else "$mark ${update.distanceText}"
     }
 
     /** Street only, max ~24 chars so it never scrolls while riding. */
@@ -24,8 +32,8 @@ object NavFormatter {
     fun subText(update: NavUpdate): String =
         update.tripLine.trim().take(48)
 
-    fun toCard(update: NavUpdate): Card =
-        Card(title(update), text(update), subText(update), update.state, update.maneuver)
+    fun toCard(update: NavUpdate, useAscii: Boolean = false): Card =
+        Card(title(update, useAscii), text(update), subText(update), update.state, update.maneuver)
 
     data class Card(
         val title: String,

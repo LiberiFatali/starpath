@@ -18,10 +18,62 @@ class NavFormatterTest {
         assertEquals("▲▲ 5 km", NavFormatter.title(straight))
 
         val dest = NavUpdate(NavManeuver.DESTINATION, "", 0, "Home", "", NavState.ENROUTE)
-        assertEquals("🏁", NavFormatter.title(dest))
+        assertEquals("?", NavFormatter.title(dest))
 
         val reroute = NavUpdate(NavManeuver.UNKNOWN, "", null, "", "", NavState.REROUTING)
         assertEquals("… Rerouting", NavFormatter.title(reroute))
+    }
+
+    @Test
+    fun `display collapses to left right straight unknown`() {
+        // Left/right families share one mark; sideless maneuvers render as ?.
+        assertEquals(
+            "◀◀ 50 m",
+            NavFormatter.title(NavUpdate(NavManeuver.SLIGHT_LEFT, "50 m", 50, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "◀◀ 50 m",
+            NavFormatter.title(NavUpdate(NavManeuver.SHARP_LEFT, "50 m", 50, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "◀◀ 50 m",
+            NavFormatter.title(NavUpdate(NavManeuver.KEEP_LEFT, "50 m", 50, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "▶▶ 50 m",
+            NavFormatter.title(NavUpdate(NavManeuver.KEEP_RIGHT, "50 m", 50, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "? 100 m",
+            NavFormatter.title(NavUpdate(NavManeuver.UTURN, "100 m", 100, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "? 500 m",
+            NavFormatter.title(NavUpdate(NavManeuver.ROUNDABOUT, "500 m", 500, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "? 1 km",
+            NavFormatter.title(NavUpdate(NavManeuver.EXIT, "1 km", 1000, "St", "", NavState.ENROUTE)),
+        )
+    }
+
+    @Test
+    fun `ascii mode uses essential marks only`() {
+        fun asciiTitle(maneuver: NavManeuver, distance: String) =
+            NavFormatter.title(
+                NavUpdate(maneuver, distance, null, "St", "", NavState.ENROUTE),
+                useAscii = true,
+            )
+        assertEquals("<- 200 m", asciiTitle(NavManeuver.TURN_LEFT, "200 m"))
+        assertEquals("<- 200 m", asciiTitle(NavManeuver.SLIGHT_LEFT, "200 m"))
+        assertEquals("-> 200 m", asciiTitle(NavManeuver.TURN_RIGHT, "200 m"))
+        assertEquals("-> 200 m", asciiTitle(NavManeuver.SHARP_RIGHT, "200 m"))
+        assertEquals("^ 2 km", asciiTitle(NavManeuver.STRAIGHT, "2 km"))
+        assertEquals("?", asciiTitle(NavManeuver.UTURN, ""))
+        assertEquals("?", asciiTitle(NavManeuver.ROUNDABOUT, ""))
+        assertEquals("?", asciiTitle(NavManeuver.EXIT, ""))
+        assertEquals("?", asciiTitle(NavManeuver.DESTINATION, ""))
+        assertEquals("? 200 m", asciiTitle(NavManeuver.UNKNOWN, "200 m"))
     }
 
     @Test

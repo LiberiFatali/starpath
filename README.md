@@ -1,6 +1,6 @@
-# ★ StarPath - Google Maps turns on Amazfit Active 2
+# ★ StarPath - Google Maps turn-by-turn for Amazfit watches and Zepp devices
 
-**Why:** [Amazfit Active 2](https://us.amazfit.com/products/active-2-round) has no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket.
+**Why:** Most Amazfit watches and Zepp-paired devices have no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket (tested on Amazfit Active 2 — see Compatibility).
 
 <img src="docs/assets/arrow/3_maps_starpath_turn_right.jpg" alt="Glanceable Card" width="360" />
 
@@ -15,13 +15,20 @@
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
 3. **Enable in Zepp App**:
-   Open **Zepp App** → **Device** (bottom bar) → select **Active 2** → **Notifications and Reminders** → **App Alerts** → toggle **StarPath** ON (tap **Manage Apps** at the bottom to check StarPath if not listed).
-   *(Tip: Tap "Send test card to watch" in StarPath first if StarPath does not appear in Zepp's app list yet).*
+   In the Zepp App, open your paired watch (e.g. Amazfit Active 2) and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet).
 4. **Ride with Google Maps**:
    Start navigation in Google Maps. StarPath starts automatically in the background, delivers live turn updates and vibration pulses before intersections, and shuts itself down when you arrive.
 
 > [!TIP]
-> **Screen-off Alert Tip**: In Zepp App → *Notifications and Reminders* → *App Alerts*, if **"Only receive when the screen is off"** is enabled, Zepp will not send notifications to the watch while your phone screen is turned on. Either turn that setting OFF for testing, or tap **"Send test card in 5s"** in StarPath and immediately lock your phone screen.
+> **Screen-off Alert Tip**: If your companion app has a "receive only when phone screen is off" option and it is enabled, it will not send notifications to the watch while your phone screen is turned on. Either turn that setting OFF for testing, or tap **"Send test card in 5s"** in StarPath and immediately lock your phone screen.
+
+---
+
+## ⌚ Compatibility
+
+**Tested:** Amazfit Active 2 (Round) + Android phone — full turn/vibrate/wake verified.
+**Expected to work:** any watch paired via the Zepp App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families). The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` otherwise); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `?`).
+See **[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)** for details and how to report your model.
 
 ---
 
@@ -54,6 +61,7 @@ Output artifacts:
 
 - **[docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)** — Architectural diagrams, component roles, stay-awake pulse algorithms, and developer debugging steps.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, notification capture guide, and PR guidelines.
+- **[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)** — Which watches work, the 3-direction display model, and how to report your model.
 - **[docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md)** — Privacy policy and data handling (100% on-device, zero telemetry).
 - **[docs/blog-watch-missed-turn.md](docs/blog-watch-missed-turn.md)** — Blog post: how arrow-pixel recognition learned to read Maps turn icons.
 

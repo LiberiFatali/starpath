@@ -46,19 +46,21 @@ class NavAlertManager(
         currentTimeMs: Long = System.currentTimeMillis(),
     ): Decision {
         if (update.state == NavState.REROUTING) {
-            recordAlert(update.maneuver, null, currentTimeMs)
+            recordAlert(update.maneuver.canonical(), null, currentTimeMs)
             return Decision(shouldAlert = true, AlertReason.REROUTING)
         }
 
-        // Maneuver changed: always alert
-        if (update.maneuver != lastAlertedManeuver) {
+        // Maneuver changed (canonical left/right/straight/?): always alert.
+        // Left variants (slight/sharp/keep) share one display mark, so they
+        // must not re-alert among themselves.
+        if (update.maneuver.canonical() != lastAlertedManeuver) {
             val milestone = calculateMilestone(update.distanceMeters)
-            recordAlert(update.maneuver, milestone, currentTimeMs)
+            recordAlert(update.maneuver.canonical(), milestone, currentTimeMs)
             return Decision(shouldAlert = true, AlertReason.MANEUVER_CHANGED)
         }
 
         // For straight riding, don't alert on milestones or pulse
-        if (update.maneuver == NavManeuver.STRAIGHT) {
+        if (update.maneuver.canonical() == NavManeuver.STRAIGHT) {
             return Decision(shouldAlert = false, AlertReason.NONE)
         }
 
@@ -67,13 +69,13 @@ class NavAlertManager(
             val milestone = calculateMilestone(dist)
             // If we crossed into a tighter milestone (e.g., entered <= 500m, or <= 200m)
             if (milestone != null && (lastMilestone == null || milestone < lastMilestone!!)) {
-                recordAlert(update.maneuver, milestone, currentTimeMs)
+                recordAlert(update.maneuver.canonical(), milestone, currentTimeMs)
                 return Decision(shouldAlert = true, AlertReason.MILESTONE_CROSSED)
             }
 
             // Stay-awake pulse within 300m of turn if watch screen likely timed out
             if (dist <= 300 && (currentTimeMs - lastAlertTimeMs) >= pulseIntervalMs) {
-                recordAlert(update.maneuver, milestone ?: lastMilestone, currentTimeMs)
+                recordAlert(update.maneuver.canonical(), milestone ?: lastMilestone, currentTimeMs)
                 return Decision(shouldAlert = true, AlertReason.STAY_AWAKE_PULSE)
             }
         }

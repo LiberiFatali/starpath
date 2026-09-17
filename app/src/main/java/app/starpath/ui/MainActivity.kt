@@ -51,8 +51,13 @@ class MainActivity : Activity() {
 
     private lateinit var status: TextView
     private lateinit var setupButton: Button
+    private lateinit var asciiButton: Button
     private lateinit var lastParseView: TextView
     private var pendingStep = PendingStep.NONE
+
+    private fun isAsciiArrows(): Boolean =
+        getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
+            .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,6 +101,23 @@ class MainActivity : Activity() {
                 sendTestCard()
             }, 5000)
         }
+
+        asciiButton = Button(this).apply {
+            setOnClickListener {
+                val next = !isAsciiArrows()
+                getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE).edit()
+                    .putBoolean(NavFormatter.PREF_ASCII_ARROWS, next)
+                    .apply()
+                refreshAsciiButton()
+                Toast.makeText(
+                    this@MainActivity,
+                    if (next) "ASCII arrows ON (<- -> ^ ?)" else "Arrow glyphs ON (◀◀ ▶▶ ▲▲ ?)",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
+        layout.addView(asciiButton)
+        refreshAsciiButton()
 
         addButton("Stop & Exit StarPath") {
             stopAndExit()
@@ -154,13 +176,13 @@ class MainActivity : Activity() {
 
         val help = TextView(this).apply {
             textSize = 14f
-            text = "\nOn the watch & Zepp App:\n" +
-                "1. Zepp App → Device (bottom bar) → Active 2 → Notifications and Reminders → App Alerts → enable “StarPath”.\n" +
+            text = "\nOn the watch & Zepp App (e.g. Amazfit Active 2):\n" +
+                "1. In the Zepp App, open your paired watch and enable notification/alert mirroring, then select “StarPath” (send a test card first if StarPath isn't listed yet).\n" +
                 "2. Keep notification longer on watch:\n" +
-                "   • On watch: Settings → Display & Brightness → Auto Screen Off / Screen-on Duration → set to 15s–30s.\n" +
+                "   • On watch: display/screen settings → screen-on duration → set to 15s–30s.\n" +
                 "   • StarPath automatically re-wakes the watch at milestones (500m, 200m, 100m, 50m) and pulses every 18s approaching turns.\n" +
-                "3. Zepp App → Notifications and Reminders → App Alerts → if “Only receive when screen is off” is ON, either turn it OFF for testing or use the 5s delayed button and lock your phone.\n" +
-                "4. Ensure watch Do Not Disturb (DND) / Sleep Mode is OFF.\n\n" +
+                "3. If your companion app has a “receive only when phone screen is off” option and it is ON, either turn it OFF for testing or use the 5s delayed button and lock your phone.\n" +
+                "4. Ensure watch Do Not Disturb (DND) / Sleep Mode is OFF and the watch stays connected over Bluetooth.\n\n" +
                 "Then navigate in Google Maps with phone in your pocket — " +
                 "background service starts automatically and turn cards appear live on the watch. " +
                 "When navigation ends, the background service stops itself."
@@ -268,10 +290,16 @@ class MainActivity : Activity() {
                     street = "Nguyen Hue",
                     tripLine = "12 min · 3.2 km left",
                     state = NavState.ENROUTE,
-                )
+                ),
+                isAsciiArrows(),
             ),
             alert = true,
         )
+    }
+
+    private fun refreshAsciiButton() {
+        asciiButton.text =
+            if (isAsciiArrows()) "ASCII arrows: ON (<- -> ^ ?)" else "ASCII arrows: OFF (◀◀ ▶▶ ▲▲ ?)"
     }
 
     private fun stopAndExit() {
@@ -340,6 +368,7 @@ class MainActivity : Activity() {
             setupButton.text = "Grant Permissions (1-Tap Setup)"
             setupButton.isEnabled = true
         }
+        if (::asciiButton.isInitialized) refreshAsciiButton()
         refreshLastParse()
     }
 
