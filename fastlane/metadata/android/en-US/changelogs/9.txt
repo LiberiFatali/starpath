@@ -1,0 +1,6 @@
+- Release 0.9.
+- chore(fdroid): sync metadata for v0.8 [skip ci]
+- docs(readme): format compatibility section
+- feat(nav): add strict notification deduplication and DEST state
+- build(ci): restrict versioned artifact copies to GitHub Actions
+- release: bump to v0.9
