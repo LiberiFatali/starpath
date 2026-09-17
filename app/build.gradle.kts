@@ -82,6 +82,10 @@ android {
 }
 
 val copyVersionedApk = tasks.register<Copy>("copyVersionedApk") {
+    doFirst {
+        layout.buildDirectory.dir("outputs/apk/versioned").get().asFile
+            .listFiles { f -> f.name.endsWith(".apk") }?.forEach { it.delete() }
+    }
     from(layout.buildDirectory.dir("outputs/apk/debug"))
     into(layout.buildDirectory.dir("outputs/apk/versioned"))
     include("app-debug.apk")
@@ -89,6 +93,10 @@ val copyVersionedApk = tasks.register<Copy>("copyVersionedApk") {
 }
 
 val copyVersionedReleaseApk = tasks.register<Copy>("copyVersionedReleaseApk") {
+    doFirst {
+        layout.buildDirectory.dir("outputs/apk/versioned").get().asFile
+            .listFiles { f -> f.name.endsWith(".apk") }?.forEach { it.delete() }
+    }
     from(layout.buildDirectory.dir("outputs/apk/release"))
     into(layout.buildDirectory.dir("outputs/apk/versioned"))
     include("app-release.apk", "app-release-unsigned.apk")
@@ -102,6 +110,10 @@ val copyVersionedReleaseApk = tasks.register<Copy>("copyVersionedReleaseApk") {
 }
 
 val copyVersionedReleaseBundle = tasks.register<Copy>("copyVersionedReleaseBundle") {
+    doFirst {
+        layout.buildDirectory.dir("outputs/bundle/versioned").get().asFile
+            .listFiles { f -> f.name.endsWith(".aab") }?.forEach { it.delete() }
+    }
     from(layout.buildDirectory.dir("outputs/bundle/release"))
     into(layout.buildDirectory.dir("outputs/bundle/versioned"))
     include("app-release.aab", "app-release-unsigned.aab")
@@ -114,16 +126,21 @@ val copyVersionedReleaseBundle = tasks.register<Copy>("copyVersionedReleaseBundl
     }
 }
 
-tasks.matching { it.name == "assembleDebug" }.configureEach {
-    finalizedBy(copyVersionedApk)
-}
+// Versioned copies are publish-only (release.yml checksums + docs).
+// Local builds stay on AGP defaults so ./gradlew assemble* does not
+// recreate outputs/apk/versioned or outputs/bundle/versioned.
+if (System.getenv("GITHUB_ACTIONS") == "true") {
+    tasks.matching { it.name == "assembleDebug" }.configureEach {
+        finalizedBy(copyVersionedApk)
+    }
 
-tasks.matching { it.name == "assembleRelease" }.configureEach {
-    finalizedBy(copyVersionedReleaseApk)
-}
+    tasks.matching { it.name == "assembleRelease" }.configureEach {
+        finalizedBy(copyVersionedReleaseApk)
+    }
 
-tasks.matching { it.name == "bundleRelease" }.configureEach {
-    finalizedBy(copyVersionedReleaseBundle)
+    tasks.matching { it.name == "bundleRelease" }.configureEach {
+        finalizedBy(copyVersionedReleaseBundle)
+    }
 }
 
 dependencies {
