@@ -24,6 +24,22 @@ class NavFormatterTest {
         val dest = NavUpdate(NavManeuver.DESTINATION, "", 0, "Home", "", NavState.ENROUTE)
         assertEquals("DEST", NavFormatter.title(dest))
 
+        // Arrival with Maps-borrowed distance stays mark-only, so "600 m"
+        // doesn't echo line 2 ("Drive 2 min (600 m)…") and line 3.
+        val destBorrowed =
+            NavUpdate(
+                NavManeuver.DESTINATION,
+                "600 m",
+                600,
+                "Drive 2 min (600 m) to Chill 'n Feel Coffee",
+                "Drive 2 min (600 m) to Chill 'n Feel Coffee",
+                NavState.ENROUTE,
+            )
+        assertEquals("DEST", NavFormatter.title(destBorrowed))
+        assertEquals("DEST", NavFormatter.title(destBorrowed, useAscii = true))
+        // Line 3 keeps distance for alignment with en-route cards.
+        assertEquals("600 m · 2 min", NavFormatter.subText(destBorrowed))
+
         val reroute = NavUpdate(NavManeuver.UNKNOWN, "", null, "", "", NavState.REROUTING)
         assertEquals("… Rerouting", NavFormatter.title(reroute))
     }

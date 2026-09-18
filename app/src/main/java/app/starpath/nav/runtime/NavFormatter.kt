@@ -30,10 +30,13 @@ object NavFormatter {
      */
     const val DEST_PREFIX = "DEST "
 
-    /** e.g. "200 m ◀◀" / "1.2 km ▲▲" / "DEST" / "200 m ?" (ASCII: "200 m <-") */
+    /** e.g. "200 m ◀◀" / "1.2 km ▲▲" / "DEST" / "200 m ?" (ASCII: "200 m <-").
+     * Arrival is mark-only: near arrival Maps reuses the remaining-trip
+     * distance in the street line, so "$dist DEST" would echo line 2/3. */
     fun title(update: NavUpdate, useAscii: Boolean = false): String {
         if (update.state == NavState.REROUTING) return "… Rerouting"
         val mark = update.maneuver.displayMark(useAscii)
+        if (update.maneuver == NavManeuver.DESTINATION) return mark
         val dist = update.distanceText.trim()
         return if (dist.isBlank()) mark
         else "$dist $mark"
