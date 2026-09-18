@@ -22,10 +22,11 @@ class StarPathListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (sbn.packageName != GMapsParser.MAPS_PACKAGE) return
-        if (!sbn.notification.flags.hasFlag(Notification.FLAG_ONGOING_EVENT)) {
-            // Maps posts navigation as ongoing; ignore transient Maps shares.
-            if (sbn.notification.extras.getString(Notification.EXTRA_TITLE).isNullOrBlank()) return
-        }
+        // Navigation phase only: Maps posts active navigation as ongoing.
+        // Transient Maps pushes (crowdsource "Has it closed?" prompts, shares)
+        // are never ongoing — drop them before parsing so nothing reaches
+        // the phone card or the watch outside navigation.
+        if (!sbn.notification.flags.hasFlag(Notification.FLAG_ONGOING_EVENT)) return
         // Lightweight pipeline: extras text first, largeIcon arrow pixels
         // when the text has no verb. Decision order: text verb > icon
         // moments > UNKNOWN (never fake-straight).
@@ -35,6 +36,11 @@ class StarPathListener : NotificationListenerService() {
         val outcome = MapsRemoteParser.parseOutcome(sbn, this)
         LastParse.store(outcome)
         val update = outcome.update ?: return
+
+        // Navigation-phase validity gate (defense in depth behind the ongoing
+        // flag): drop non-navigation content that still parses, e.g. an
+        // UNKNOWN prompt with no distance. Diagnostics are already stored.
+        if (!NavGate.shouldForward(update, outcome.appliedIcon)) return
 
         // Strict dedup: Maps re-posts every 10–20 m with only the distance
         // shrinking. The parsed update already splits direction (maneuver)

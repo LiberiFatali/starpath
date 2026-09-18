@@ -26,13 +26,21 @@ class NavNotifier(private val context: Context) {
         context.getSystemService(NotificationManager::class.java)
 
     fun ensureChannels() {
+        // Channels are immutable after first install: delete + re-create so
+        // existing installs pick up the muted config below. Same ID keeps
+        // Zepp's per-app selection intact.
+        manager.deleteNotificationChannel(CHANNEL_ID)
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID, "StarPath live directions",
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = "Turn-by-turn cards forwarded to your watch"
-                enableVibration(true)
+                // Silent phone card: Google Maps already alerts on the phone.
+                // Importance stays HIGH so Zepp keeps waking the watch;
+                // the phone itself never sounds or vibrates.
+                enableVibration(false)
+                setSound(null, null)
             }
         )
         manager.createNotificationChannel(
@@ -45,7 +53,8 @@ class NavNotifier(private val context: Context) {
 
     /**
      * @param alert true when the maneuver changed or a distance milestone was reached:
-     *   the re-post vibrates the phone + wakes the watch display.
+     *   the re-post nudges Zepp to wake the watch display. The phone itself
+     *   stays silent (muted channel + [alert]-gated [NotificationCompat.Builder.setSilent]).
      *   Distance/ETA refreshes pass false (silent update).
      */
     fun post(card: NavFormatter.Card, alert: Boolean) {

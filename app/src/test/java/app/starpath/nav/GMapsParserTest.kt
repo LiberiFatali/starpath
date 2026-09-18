@@ -188,6 +188,6 @@ class GMapsParserTest {
     @Test
     fun `unknown formatter shows question mark`() {
         val u = NavUpdate(NavManeuver.UNKNOWN, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE)
-        assertEquals("? 200 m", NavFormatter.title(u))
+        assertEquals("200 m ?", NavFormatter.title(u))
     }
 }

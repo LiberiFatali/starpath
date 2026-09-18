@@ -56,7 +56,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **File:** `app/src/main/java/app/starpath/nav/StarPathListener.kt`
 * **Role:** Extends Android's `NotificationListenerService`.
 * **Behavior:**
-  - Filters strictly for notifications originating from `com.google.android.apps.maps` with `FLAG_ONGOING_EVENT`.
+  - Filters strictly for notifications originating from `com.google.android.apps.maps` with `FLAG_ONGOING_EVENT` (navigation phase only — transient Maps pushes are dropped before parsing). Parsed updates additionally pass the `NavGate` validity check (rerouting, known maneuver, icon verdict, or distance); non-navigation content such as crowdsource prompts never reaches the phone card or watch.
   - Extracts the raw notification extras (`EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_TEXT_LINES`).
   - Automatically spins up `KeepAliveService` when an active navigation session starts.
   - Automatically cancels StarPath cards and tears down `KeepAliveService` when Google Maps navigation ends or is dismissed.
@@ -111,7 +111,7 @@ StarPath does not require a custom mini-program installed on the watch for v1. I
 
 1. StarPath posts an Android notification on the phone with `PRIORITY_HIGH` and `CATEGORY_NAVIGATION`.
 2. The **Zepp App** detects the notification via its own notification reader and transmits the notification **text** (title, body) over Bluetooth Low Energy (BLE) to the paired watch (e.g. Amazfit Active 2). **Images (`largeIcon`, bitmaps) are NOT forwarded** — verified Sep 2026: image forwarding on Amazfit is a 2026 iOS-only beta limited to newer watches (Cheetah 2 Ultra / Balance Ultra / Balance 3…), Amazfit Active 2 not included.
-3. The watch vibrates and turns on its screen, presenting the glance card (`◀◀ 40 m / street`).
+3. The watch vibrates and turns on its screen, presenting the glance card (`260 m ▶▶ / street / 450 m · 6 min`).
 
 See `docs/COMPATIBILITY.md` for the supported-device model (any Zepp-App-paired watch with notification mirroring; tested on Amazfit Active 2).
 
