@@ -21,10 +21,10 @@ do not duplicate them here.
   `main`). Direct `git tag` pushes are inert. See `release.yml` header and
   `CONTRIBUTING.md § Releasing a New Version` for the canonical flow.
 - Agent must never: bump versions, create/move tags, or hand-edit
-  `fdroid/app.starpath.yml` (`Builds` / `CurrentVersion*`),
   `fastlane/metadata/android/en-US/changelogs/<code>.txt`, or the
   `SECURITY.md` version row. The workflow's bot commit (`[skip ci]`) owns
-  all of these.
+  all of these. (`fdroid/app.starpath.yml` is hand-editable; keep
+  `Builds` / `CurrentVersion*` plain literals in sync.)
 - Past incident: deriving the version from env/`gradleProperty` (Elvis
   chain) made F-Droid `checkupdates` report `version=None` and fail with
   `current version is newer: old vercode=6, new vercode=5`.

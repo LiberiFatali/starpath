@@ -13,13 +13,6 @@ Repo: https://github.com/LiberiFatali/starpath.git
 Binaries: https://github.com/LiberiFatali/starpath/releases/download/v%v/starpath-v%v.apk
 
 Builds:
-  - versionName: '0.7'
-    versionCode: 7
-    commit: 653a52fa897cdba82b248eb6844143dc4f085980
-    subdir: app
-    gradle:
-      - yes
-
   - versionName: '0.8'
     versionCode: 8
     commit: 17078f6c341e19df33fa0074643cbf8a05d23f52
