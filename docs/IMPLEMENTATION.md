@@ -190,9 +190,17 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
    downscales to a 16×16 mask, recenters to the foreground bounding box, then
    compares first-order moments: `delta = topMeanX − bottomMeanX`
    (top-half mean-x minus bottom-half mean-x). `delta ≤ −1.5 → TURN_LEFT`,
-   `delta ≥ +1.5 → TURN_RIGHT` (confidence `0.60 + |delta| × 0.07`, capped
-    at `0.95`); a wide bottom block (>8 cells — the pin+road largeIcon, both
-    mirrors) → `DESTINATION` (`0.85`, renders as `DEST`); otherwise a centered
+    `delta ≥ +1.5 → TURN_RIGHT` (confidence `0.60 + |delta| × 0.07`, capped
+     at `0.95`); a wide block (>8 cells) persisting to the icon's bottom
+     edge — the pin+road largeIcon, both mirrors — → `DESTINATION` (`0.85`,
+     renders as `DEST`); an enclosed background hole (donut loop, ≥4 cells)
+     re-enables a lower `|delta| ≥ 1.0` threshold whose sign gives the
+     roundabout exit side (`roundabout_right` → `▶▶` R≈0.70; its mirror →
+     `◀◀`); a roundabout loop is wide mid-icon but tapers to a stem, so it
+     never trips the DEST gate.
+     A `DESTINATION` icon verdict is additionally suppressed when the trip
+     line shows >500 m remaining (far-from-arrival lookalike → `?`);
+     otherwise a centered
     mass with a narrow top apex → `STRAIGHT`
     (`0.80`), else `?` (never U-turn from
     pixels). Masks shorter than 8 rows (chevrons, lone heads) are `UNKNOWN`;

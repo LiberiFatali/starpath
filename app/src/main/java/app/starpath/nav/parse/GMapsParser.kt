@@ -110,6 +110,40 @@ object GMapsParser {
         return "$raw $unit" to meters
     }
 
+    /** Trip remaining beyond this makes a DESTINATION icon verdict implausible. */
+    internal const val MAX_DEST_TRIP_METERS = 500
+
+    /**
+     * Remaining-trip distance in meters from a trip line such as
+     * "13 min · 3.5 km · 19:22 ETA". Null when the line carries no distance.
+     */
+    internal fun tripRemainingMeters(tripLine: String): Int? {
+        // Trip lines use non-breaking spaces ("3.5 km"), which `\s` does
+        // not match — normalize first (also narrow NBSP, seen in Maps).
+        val norm = tripLine.replace('\u00A0', ' ').replace('\u202F', ' ')
+        val m = distanceAny.find(norm) ?: return null
+        val raw = m.groupValues[1].replace(',', '.')
+        val value = raw.toDoubleOrNull() ?: return null
+        return when (m.groupValues[2].lowercase()) {
+            "km" -> (value * 1000).toInt()
+            "mi" -> (value * 1609).toInt()
+            "ft" -> (value * 0.3048).toInt()
+            "yd" -> (value * 0.9144).toInt()
+            else -> value.toInt()
+        }
+    }
+
+    /**
+     * Whether a DESTINATION icon verdict is plausible given the remaining
+     * trip distance. Far from arrival a DEST lookalike (field: roundabout
+     * loop at 3.5 km remaining) must degrade to UNKNOWN (`?`), never DEST.
+     * No distance info means no suppression.
+     */
+    internal fun isPlausibleDestination(tripLine: String): Boolean {
+        val remaining = tripRemainingMeters(tripLine) ?: return true
+        return remaining <= MAX_DEST_TRIP_METERS
+    }
+
     /** First non-UNKNOWN maneuver across lines in priority order. */
     internal fun detectManeuver(lines: List<String>): NavManeuver {
         for (line in lines) {

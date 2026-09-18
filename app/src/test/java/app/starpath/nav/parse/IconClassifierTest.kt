@@ -165,6 +165,29 @@ class IconClassifierTest {
         )
 
         val DEST_PIN_RIGHT = DEST_PIN_LEFT.map { it.reversed() }
+
+        /** Field mask from roundabout_right dump: loop wide mid-icon, narrow stem. */
+        val ROUNDABOUT_RIGHT_FIELD = listOf(
+            "................",
+            "................",
+            "..#####...###...",
+            ".#######..####..",
+            "########..#####.",
+            "###...##########",
+            "###...##########",
+            "####.###...####.",
+            ".#######..####..",
+            "..#####...###...",
+            "...###....##....",
+            "...###..........",
+            "...###..........",
+            "...###..........",
+            "................",
+            "................",
+        )
+
+        /** Synthetic exit-left mirror of the field roundabout mask. */
+        val ROUNDABOUT_LEFT_FIELD = ROUNDABOUT_RIGHT_FIELD.map { it.reversed() }
     }
 
     @Test
@@ -242,6 +265,25 @@ class IconClassifierTest {
         val right = IconClassifier.classify(pixelsFromArt(DEST_PIN_RIGHT))
         assertEquals(NavManeuver.DESTINATION, right.maneuver)
         assertTrue("score=${right.score}", right.score >= IconClassifier.HEAD_THRESHOLD)
+    }
+
+    @Test
+    fun `roundabout exit right is turn right never destination`() {
+        // Field regression roundabout_right (3.5 km remaining): the loop is
+        // wide mid-icon so the old anywhere-in-bottom-half gate returned
+        // DESTINATION at 0.85. The width does not persist to the bottom
+        // edge (3-wide stem), so it must not be DEST; the enclosed loop
+        // re-enables the exit-side verdict via the diluted moments delta.
+        val m = IconClassifier.classify(pixelsFromArt(ROUNDABOUT_RIGHT_FIELD))
+        assertEquals(NavManeuver.TURN_RIGHT, m.maneuver)
+        assertTrue("score=${m.score}", m.score >= IconClassifier.HEAD_THRESHOLD)
+    }
+
+    @Test
+    fun `roundabout exit left mirror is turn left`() {
+        val m = IconClassifier.classify(pixelsFromArt(ROUNDABOUT_LEFT_FIELD))
+        assertEquals(NavManeuver.TURN_LEFT, m.maneuver)
+        assertTrue("score=${m.score}", m.score >= IconClassifier.HEAD_THRESHOLD)
     }
 
     @Test

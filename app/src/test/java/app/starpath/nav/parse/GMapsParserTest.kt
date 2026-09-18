@@ -188,4 +188,22 @@ class GMapsParserTest {
         assertEquals("", u.distanceText)
         assertEquals("Maps • 43 min • 15 km • 20:08 ETA", u.tripLine)
     }
+
+    @Test
+    fun `far trip remaining makes destination icon implausible`() {
+        // Field regression roundabout_right: DEST lookalike with 3.5 km
+        // remaining must suppress; true arrivals (150 m, 10 m) still apply.
+        // Trip lines use non-breaking spaces ("3.5 km") — use them here.
+        assertEquals(3500, GMapsParser.tripRemainingMeters("13 min · 3.5 km · 19:22 ETA"))
+        assertEquals(false, GMapsParser.isPlausibleDestination("13 min · 3.5 km · 19:22 ETA"))
+        assertEquals(600, GMapsParser.tripRemainingMeters("2 min · 600 m · 18:53 ETA"))
+        assertEquals(false, GMapsParser.isPlausibleDestination("2 min · 600 m · 18:53 ETA"))
+        assertEquals(150, GMapsParser.tripRemainingMeters("1 min · 150 m · 18:53 ETA"))
+        assertEquals(true, GMapsParser.isPlausibleDestination("1 min · 150 m · 18:53 ETA"))
+        assertEquals(10, GMapsParser.tripRemainingMeters("0 min · 10 m · 16:13 ETA"))
+        assertEquals(true, GMapsParser.isPlausibleDestination("0 min · 10 m · 16:13 ETA"))
+        // No distance info: never suppress.
+        assertNull(GMapsParser.tripRemainingMeters(""))
+        assertEquals(true, GMapsParser.isPlausibleDestination(""))
+    }
 }

@@ -91,6 +91,7 @@ object MapsRemoteParser {
         var appliedIcon = false
         var maskArt = ""
         var headScores = ""
+        var suppressNote = ""
         if (update.state == NavState.ENROUTE && update.maneuver == NavManeuver.UNKNOWN) {
             val pixels = parseIconPixels(sbn, context)
             if (pixels != null) {
@@ -108,8 +109,17 @@ object MapsRemoteParser {
                     "$tag=%.2f".format(s)
                 }
                 if (detail.maneuver != NavManeuver.UNKNOWN) {
-                    update = update.copy(maneuver = detail.maneuver)
-                    appliedIcon = true
+                    // A destination pin only appears at arrival: far from it
+                    // the icon is a lookalike (e.g. roundabout loop), so stay
+                    // UNKNOWN (`?`) instead of posting a false DEST.
+                    if (detail.maneuver == NavManeuver.DESTINATION &&
+                        !GMapsParser.isPlausibleDestination(update.tripLine)
+                    ) {
+                        suppressNote = " icon DEST suppressed (trip far)"
+                    } else {
+                        update = update.copy(maneuver = detail.maneuver)
+                        appliedIcon = true
+                    }
                 }
             }
         }
@@ -126,6 +136,7 @@ object MapsRemoteParser {
             note = buildString {
                 append("source=$source")
                 if (appliedIcon) append(" icon→${update.maneuver}")
+                append(suppressNote)
             },
         )
     }

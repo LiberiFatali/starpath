@@ -22,6 +22,9 @@ import app.starpath.nav.model.NavManeuver
  * Left hooks (`—┐` rotated) carry mass on the top-left with the shaft foot at
  * bottom-right, so topMeanX − bottomMeanX << 0; right hooks mirror it;
  * straight arrows stay centered (delta ≈ 0) with a narrow apex on top.
+ * A roundabout loop dilutes the delta below the turn threshold, so an
+ * enclosed background hole (donut) re-enables a lower threshold whose sign
+ * gives the exit side; symmetric loops stay UNKNOWN.
  * Thickness, dash style, and shift cancel out — which is exactly what
  * defeated both the old whole-icon templates and the triangle-head matcher
  * (thick corners matched `<` and `>` equally at 0.95).
@@ -38,15 +41,34 @@ object IconClassifier {
     /** Bounding-box height below this carries no direction (chevrons, heads). */
     internal const val MIN_HEIGHT = 8
     /**
-     * Widest foreground run allowed in the bottom half for a turn verdict.
+     * Widest foreground run allowed at the icon's bottom edge for a turn verdict.
      * Real hooks end in a ≤6-cell shaft (thick field hooks peak at 6); the
-     * Maps destination pin (pin+road) fills 10+ cells down there and otherwise
-     * mimics a large top-vs-bottom moment delta. Both mirrors (mass left or
-     * right) collapse to a single DESTINATION verdict (renders as `DEST`).
+     * Maps destination pin (pin+road) stays 10+ cells wide down to the bottom
+     * edge and otherwise mimics a large top-vs-bottom moment delta. Both
+     * mirrors (mass left or right) collapse to a single DESTINATION verdict
+     * (renders as `DEST`). The width must persist to the lowest foreground
+     * rows: a roundabout loop is wide mid-icon but tapers to a narrow stem
+     * (field: roundabout exit-right at 3.5 km remaining falsely hit DEST),
+     * so "wide anywhere in the bottom half" is not enough.
      */
     internal const val MAX_BOTTOM_WIDTH = 8
     /** Confidence for the destination-pin verdict (fixed, shape-gated). */
     internal const val PIN_SCORE = 0.85
+    /**
+     * Smallest enclosed background hole that counts as a roundabout loop.
+     * The exit-right loop encloses 7 cells; hooks and straight arrows enclose
+     * none. Destination pins do enclose small gaps, but the DEST gate above
+     * returns first, so they never reach the loop branch.
+     */
+    internal const val LOOP_MIN_HOLE = 4
+    /**
+     * |topMeanX − bottomMeanX| at or above this means a roundabout exit side
+     * when a loop is present. Below the plain-turn [TURN_DELTA]: the loop's
+     * symmetric mass dilutes the exit arrowhead (field: ±1.38), so the loop
+     * gate — not the delta alone — carries the verdict. A symmetric loop
+     * (delta ≈ 0) still falls through to UNKNOWN.
+     */
+    internal const val LOOP_DELTA = 1.0
 
     /** Raw pixels in row-major `0xAARRGGBB`, as returned by `Bitmap.getPixels`. */
     data class IconPixels(
@@ -130,18 +152,35 @@ object IconClassifier {
         if (allN == 0 || maxY < 0) return NavManeuver.UNKNOWN to 0.0
         if (maxY - minY + 1 < MIN_HEIGHT) return NavManeuver.UNKNOWN to 0.0
         if (topN == 0 || botN == 0) return NavManeuver.UNKNOWN to 0.0
-        // Destination pin: wide road block in the bottom half is not a shaft.
-        // Sign-agnostic: left and right mirrors both land here as one DEST.
-        var botMaxWidth = 0
-        for (y in GRID / 2 until GRID) {
+        // Destination pin: wide road block flush to the icon's bottom edge is
+        // not a shaft. Sign-agnostic: left and right mirrors both land here
+        // as one DEST. The width must hold at the lowest foreground rows —
+        // a roundabout loop is wide mid-icon but narrows to a stem, so it
+        // falls through to the loop branch below.
+        var edgeWidth = 0
+        for (dy in 0..1) {
+            val y = maxY - dy
+            if (y < GRID / 2) break
             var c = 0
             for (x in 0 until GRID) if (norm[y * GRID + x]) c++
-            if (c > botMaxWidth) botMaxWidth = c
+            if (c > edgeWidth) edgeWidth = c
         }
-        if (botMaxWidth > MAX_BOTTOM_WIDTH) return NavManeuver.DESTINATION to PIN_SCORE
+        if (edgeWidth > MAX_BOTTOM_WIDTH) return NavManeuver.DESTINATION to PIN_SCORE
         val topMean = topSum.toDouble() / topN
         val botMean = botSum.toDouble() / botN
         val delta = topMean - botMean
+        // Roundabout exit: the loop (donut hole) dilutes the moments delta
+        // below TURN_DELTA, but the exit arrowhead still offsets the top-half
+        // mass to its side. Loop-gated, so plain hooks (no hole) are
+        // unaffected; symmetric loops fall through to UNKNOWN.
+        if (maxEnclosedHole(norm) >= LOOP_MIN_HOLE) {
+            if (delta <= -LOOP_DELTA) {
+                return NavManeuver.TURN_LEFT to confidence(delta)
+            }
+            if (delta >= LOOP_DELTA) {
+                return NavManeuver.TURN_RIGHT to confidence(delta)
+            }
+        }
         if (delta <= -TURN_DELTA) {
             return NavManeuver.TURN_LEFT to confidence(delta)
         }
@@ -164,6 +203,79 @@ object IconClassifier {
         var c = 0
         for (x in 0 until GRID) if (norm[minY * GRID + x]) c++
         return c
+    }
+
+    /**
+     * Largest enclosed background region (4-connected) in cells. Flood-fills
+     * from the mask border; background never reached is a hole (donut loop).
+     * Zero when the background is fully connected (hooks, straight arrows).
+     */
+    internal fun maxEnclosedHole(norm: BooleanArray): Int {
+        val reached = BooleanArray(GRID * GRID)
+        val queue = ArrayDeque<Int>()
+        for (y in 0 until GRID) {
+            for (x in 0 until GRID) {
+                if (y != 0 && y != GRID - 1 && x != 0 && x != GRID - 1) continue
+                val i = y * GRID + x
+                if (!norm[i] && !reached[i]) {
+                    reached[i] = true
+                    queue.addLast(i)
+                }
+            }
+        }
+        while (queue.isNotEmpty()) {
+            val i = queue.removeFirst()
+            val x = i % GRID
+            val y = i / GRID
+            if (x > 0) queue.tryReach(norm, reached, i - 1)
+            if (x < GRID - 1) queue.tryReach(norm, reached, i + 1)
+            if (y > 0) queue.tryReach(norm, reached, i - GRID)
+            if (y < GRID - 1) queue.tryReach(norm, reached, i + GRID)
+        }
+        val seen = BooleanArray(GRID * GRID)
+        var best = 0
+        for (i in norm.indices) {
+            if (norm[i] || reached[i] || seen[i]) continue
+            var size = 0
+            val stack = ArrayDeque<Int>()
+            stack.addLast(i)
+            seen[i] = true
+            while (stack.isNotEmpty()) {
+                val j = stack.removeLast()
+                size++
+                val x = j % GRID
+                val y = j / GRID
+                if (x > 0) stack.tryVisit(norm, reached, seen, j - 1)
+                if (x < GRID - 1) stack.tryVisit(norm, reached, seen, j + 1)
+                if (y > 0) stack.tryVisit(norm, reached, seen, j - GRID)
+                if (y < GRID - 1) stack.tryVisit(norm, reached, seen, j + GRID)
+            }
+            if (size > best) best = size
+        }
+        return best
+    }
+
+    private fun ArrayDeque<Int>.tryReach(
+        norm: BooleanArray,
+        reached: BooleanArray,
+        i: Int,
+    ) {
+        if (!norm[i] && !reached[i]) {
+            reached[i] = true
+            addLast(i)
+        }
+    }
+
+    private fun ArrayDeque<Int>.tryVisit(
+        norm: BooleanArray,
+        reached: BooleanArray,
+        seen: BooleanArray,
+        i: Int,
+    ) {
+        if (!norm[i] && !reached[i] && !seen[i]) {
+            seen[i] = true
+            addLast(i)
+        }
     }
 
     /**
