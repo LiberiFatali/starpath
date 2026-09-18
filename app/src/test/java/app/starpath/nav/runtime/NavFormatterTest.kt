@@ -102,24 +102,35 @@ class NavFormatterTest {
     }
 
     @Test
-    fun `subText compacts trip and drops ETA clock`() {
+    fun `subText prefixes destination remaining and drops ETA clock`() {
         fun sub(trip: String) =
             NavFormatter.subText(NavUpdate(NavManeuver.TURN_RIGHT, "260 m", 260, "St", trip, NavState.ENROUTE))
 
-        assertEquals("3.2 km · 12 min", sub("12 min · 3.2 km"))
+        assertEquals("DEST 3.2 km · 12 min", sub("12 min · 3.2 km"))
         // Field case: remaining trip header, ETA clock dropped.
-        assertEquals("450 m · 6 min", sub("6 min · 450 m · 22:12 ETA"))
-        assertEquals("20 m · 0 min", sub("0 min · 20 m · 16:21 ETA"))
-        assertEquals("15 km · 43 min", sub("Maps • 43 min • 15 km • 20:08 ETA"))
+        assertEquals("DEST 450 m · 6 min", sub("6 min · 450 m · 22:12 ETA"))
+        assertEquals("DEST 20 m · 0 min", sub("0 min · 20 m · 16:21 ETA"))
+        assertEquals("DEST 15 km · 43 min", sub("Maps • 43 min • 15 km • 20:08 ETA"))
         // Street fallback or ETA-only carries nothing the watch needs.
         assertEquals("", sub("P. Tran Van Can"))
         assertEquals("", sub(""))
     }
 
     @Test
-    fun `subText caps at 48 characters`() {
+    fun `subText skips prefix on arrival and rerouting`() {
+        val dest = NavUpdate(NavManeuver.DESTINATION, "", 0, "Home", "6 min · 450 m", NavState.ENROUTE)
+        assertEquals("450 m · 6 min", NavFormatter.subText(dest))
+
+        val reroute = NavUpdate(NavManeuver.UNKNOWN, "", null, "", "", NavState.REROUTING)
+        assertEquals("", NavFormatter.subText(reroute))
+    }
+
+    @Test
+    fun `subText caps at 48 characters including prefix`() {
         val hugeTrip = "9".repeat(60) + " min · 450 m"
         val hugeUpdate = NavUpdate(NavManeuver.TURN_LEFT, "100 m", 100, "St", hugeTrip, NavState.ENROUTE)
-        assertEquals(48, NavFormatter.subText(hugeUpdate).length)
+        val sub = NavFormatter.subText(hugeUpdate)
+        assertEquals(48, sub.length)
+        assertTrue(sub.startsWith("DEST "))
     }
 }

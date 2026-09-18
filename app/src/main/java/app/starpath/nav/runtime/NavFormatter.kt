@@ -13,13 +13,22 @@ import app.starpath.nav.model.NavUpdate
  * collapses here via [NavManeuver.canonical] — never a fake arrow.
  *
  * Title leads with the next-turn countdown, arrow last: `260 m ▶▶`.
- * Sub carries the compacted remaining trip (`450 m · 6 min`, ETA clock
- * dropped) — never the raw Maps header verbatim.
+ * Sub carries the destination remaining trip, prefixed so the two distances
+ * never blur: `DEST 450 m · 6 min` (ETA clock dropped) — never the raw Maps
+ * header verbatim. The final arrival card (title `DEST`) and rerouting carry
+ * no prefix.
  */
 object NavFormatter {
 
     const val PREFS_FILE = "starpath_prefs"
     const val PREF_ASCII_ARROWS = "ascii_arrows"
+
+    /**
+     * Universal destination tag on the trip line. All-caps to match the
+     * `DEST` arrival mark, ASCII-safe for every Zepp watch, no translation
+     * needed (like ETA/GPS).
+     */
+    const val DEST_PREFIX = "DEST "
 
     /** e.g. "200 m ◀◀" / "1.2 km ▲▲" / "DEST" / "200 m ?" (ASCII: "200 m <-") */
     fun title(update: NavUpdate, useAscii: Boolean = false): String {
@@ -53,9 +62,15 @@ object NavFormatter {
         return listOf(dist, dur).filter { it.isNotBlank() }.joinToString(" · ").take(48)
     }
 
-    /** Compacted remaining line, capped. */
-    fun subText(update: NavUpdate): String =
-        compactTrip(update.tripLine)
+    /** Destination remaining line, e.g. `DEST 450 m · 6 min`, total capped at 48 chars. */
+    fun subText(update: NavUpdate): String {
+        val compact = compactTrip(update.tripLine)
+        if (compact.isBlank()) return ""
+        // Final arrival already says DEST in the title; rerouting has no trip.
+        if (update.state == NavState.REROUTING) return compact
+        if (update.maneuver == NavManeuver.DESTINATION) return compact
+        return (DEST_PREFIX + compact).take(48)
+    }
 
     fun toCard(update: NavUpdate, useAscii: Boolean = false): Card =
         Card(title(update, useAscii), text(update), subText(update), update.state, update.maneuver)

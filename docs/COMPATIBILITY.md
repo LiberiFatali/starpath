@@ -31,7 +31,9 @@ The watch shows 3 essential directions:
   StarPath: `<-` / `->` / `^` / `DEST` / `?`.
 
 Small or square screens may wrap the street/trip lines; the title
-(direction + distance) always fits.
+(direction + distance) always fits. The trip line is tagged `DEST`
+(e.g. `DEST 450 m · 6 min`) so the two distances never blur; the final
+arrival card shows bare `DEST` with no trip line.
 
 ## Out of scope / untested
 

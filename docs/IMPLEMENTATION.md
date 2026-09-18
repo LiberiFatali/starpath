@@ -84,7 +84,8 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavNotifier.kt`
 * **Role:** Re-posts the parsed state as a **text-only** glance card
   (`title`/`text`/`sub` with `◀◀`/`▶▶`/`▲▲`/`?`, or `<-`/`->`/`^`/`?` in
-  ASCII mode). No `largeIcon`
+  ASCII mode; sub carries the destination remaining as `DEST 450 m · 6 min`,
+  empty on arrival/rerouting). No `largeIcon`
   bitmap is attached: Zepp forwards only notification text to the
   paired watch (e.g. Amazfit Active 2), so outbound bitmaps were dead payload/CPU.
   Inbound Maps arrow pixels are still read via `MapsRemoteParser` +
@@ -111,7 +112,7 @@ StarPath does not require a custom mini-program installed on the watch for v1. I
 
 1. StarPath posts an Android notification on the phone with `PRIORITY_HIGH` and `CATEGORY_NAVIGATION`.
 2. The **Zepp App** detects the notification via its own notification reader and transmits the notification **text** (title, body) over Bluetooth Low Energy (BLE) to the paired watch (e.g. Amazfit Active 2). **Images (`largeIcon`, bitmaps) are NOT forwarded** — verified Sep 2026: image forwarding on Amazfit is a 2026 iOS-only beta limited to newer watches (Cheetah 2 Ultra / Balance Ultra / Balance 3…), Amazfit Active 2 not included.
-3. The watch vibrates and turns on its screen, presenting the glance card (`260 m ▶▶ / street / 450 m · 6 min`).
+3. The watch vibrates and turns on its screen, presenting the glance card (`260 m ▶▶ / street / DEST 450 m · 6 min`).
 
 See `docs/COMPATIBILITY.md` for the supported-device model (any Zepp-App-paired watch with notification mirroring; tested on Amazfit Active 2).
 
