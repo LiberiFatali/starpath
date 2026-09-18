@@ -1,0 +1,6 @@
+- Release 0.12.
+- chore(fdroid): sync metadata for v0.11 [skip ci]
+- fix(nav): correct roundabout icon classification and destination gating
+- fix(nav): suppress duplicate distance on destination arrival
+- chore: ignore local codebase-memory index
+- release: bump to v0.12
