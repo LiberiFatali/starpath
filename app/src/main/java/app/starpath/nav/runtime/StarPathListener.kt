@@ -1,8 +1,12 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import app.starpath.nav.model.NavUpdate
+import app.starpath.nav.parse.GMapsParser
+import app.starpath.nav.parse.LastParse
+import app.starpath.nav.parse.MapsRemoteParser
 
 /**
  * Intercepts the Google Maps navigation notification, parses it, and

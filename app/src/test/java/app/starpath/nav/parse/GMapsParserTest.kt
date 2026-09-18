@@ -1,8 +1,12 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+
 
 class GMapsParserTest {
 
@@ -183,11 +187,5 @@ class GMapsParserTest {
         // Remaining-trip distance must not masquerade as turn distance.
         assertEquals("", u.distanceText)
         assertEquals("Maps • 43 min • 15 km • 20:08 ETA", u.tripLine)
-    }
-
-    @Test
-    fun `unknown formatter shows question mark`() {
-        val u = NavUpdate(NavManeuver.UNKNOWN, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE)
-        assertEquals("200 m ?", NavFormatter.title(u))
     }
 }

@@ -1,4 +1,4 @@
-package app.starpath.nav
+package app.starpath.nav.model
 
 enum class NavState { ENROUTE, REROUTING }
 

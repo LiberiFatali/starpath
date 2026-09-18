@@ -1,5 +1,8 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 /**
  * Manages alert triggers (vibrate and screen wake-up) for navigation updates.
  *

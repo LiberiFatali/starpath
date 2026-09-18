@@ -1,8 +1,10 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
+import app.starpath.nav.model.NavManeuver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
 
 /**
  * [IconClassifier] is pure JVM-testable: icons are built as [IconPixels]

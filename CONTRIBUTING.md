@@ -50,12 +50,12 @@ adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.
 ```
 
 ### 2. Add Keywords to Parser
-Edit [`app/src/main/java/app/starpath/nav/GMapsParser.kt`](app/src/main/java/app/starpath/nav/GMapsParser.kt):
+Edit [`app/src/main/java/app/starpath/nav/parse/GMapsParser.kt`](app/src/main/java/app/starpath/nav/parse/GMapsParser.kt):
 - Add maneuver keywords to regex patterns (e.g. left/right/straight keywords).
 - Add distance units if your language uses localized symbols.
 
 ### 3. Add Unit Tests
-Add your captured notification text to [`app/src/test/java/app/starpath/nav/GMapsParserTest.kt`](app/src/test/java/app/starpath/nav/GMapsParserTest.kt):
+Add your captured notification text to [`app/src/test/java/app/starpath/nav/parse/GMapsParserTest.kt`](app/src/test/java/app/starpath/nav/parse/GMapsParserTest.kt):
 ```kotlin
 @Test
 fun `parses localized maneuver correctly`() {
@@ -106,7 +106,7 @@ auto-bumps minor from the latest tag). It:
    checkupdates parser reads them, so never derive them from env/tags.
 2. Tags that exact commit (`v0.7`) so the tag always carries correct
    literals (F-Droid builds from the tag commit).
-3. Builds the signed APK/AAB from the tag, creates
+3. Builds the signed APK from the tag, creates
    the GitHub Release with checksums, and syncs back to `main` (bot
    commit): a fastlane changelog stub at
    `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if

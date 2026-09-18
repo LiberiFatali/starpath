@@ -202,20 +202,19 @@ jobs:
           fi
           echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > starpath-release.jks
 
-      - name: Build Signed Release APK & Bundle
+      - name: Build Signed Release APK
         env:
           KEYSTORE_PATH: starpath-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
+          ./gradlew :app:assembleRelease --stacktrace
 
       - name: Generate Checksums
         run: |
           mkdir -p release-artifacts
           cp app/build/outputs/apk/versioned/*.apk release-artifacts/
-          cp app/build/outputs/bundle/versioned/*.aab release-artifacts/
           cd release-artifacts
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt

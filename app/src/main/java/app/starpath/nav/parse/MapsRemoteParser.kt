@@ -1,4 +1,4 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
 import android.app.Notification
 import android.content.Context
@@ -6,6 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.service.notification.StatusBarNotification
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 
 /**
  * Lightweight Maps notification parser: `extras` text first, `largeIcon`

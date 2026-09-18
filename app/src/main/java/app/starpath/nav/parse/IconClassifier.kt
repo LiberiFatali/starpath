@@ -1,5 +1,6 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
+import app.starpath.nav.model.NavManeuver
 /**
  * Classifies the Google Maps navigation arrow bitmap into a [NavManeuver].
  *

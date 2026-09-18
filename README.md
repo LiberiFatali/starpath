@@ -46,8 +46,8 @@ The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` othe
 # Build debug APK
 ./gradlew :app:assembleDebug
 
-# Build signed release APK & Play Store Bundle
-./gradlew :app:assembleRelease :app:bundleRelease
+# Build signed release APK
+./gradlew :app:assembleRelease
 
 # Run unit tests
 ./gradlew :app:testDebugUnitTest
@@ -55,7 +55,6 @@ The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` othe
 
 Output artifacts:
 - Release APK: `app/build/outputs/apk/versioned/starpath-v*.apk`
-- Release Bundle: `app/build/outputs/bundle/versioned/starpath-v*.aab`
 
 ---
 

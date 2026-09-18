@@ -1,4 +1,4 @@
-package app.starpath.nav
+package app.starpath.nav.model
 
 /**
  * Maneuver kind. The watch displays essential directions at a glance on

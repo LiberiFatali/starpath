@@ -1,8 +1,12 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
 
 class NavFormatterTest {
 
@@ -50,6 +54,10 @@ class NavFormatterTest {
         assertEquals(
             "500 m ?",
             NavFormatter.title(NavUpdate(NavManeuver.UNKNOWN, "500 m", 500, "St", "", NavState.ENROUTE)),
+        )
+        assertEquals(
+            "200 m ?",
+            NavFormatter.title(NavUpdate(NavManeuver.UNKNOWN, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE)),
         )
         assertEquals(
             "1 km ?",

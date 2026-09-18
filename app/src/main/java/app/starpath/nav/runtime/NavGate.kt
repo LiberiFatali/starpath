@@ -1,5 +1,8 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 /**
  * Navigation-phase validity gate: decides whether a parsed Maps update is a
  * real navigation state worth forwarding to the phone card / watch.

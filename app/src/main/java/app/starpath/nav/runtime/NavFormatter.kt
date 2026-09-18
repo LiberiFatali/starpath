@@ -1,5 +1,8 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 /**
  * Formats a [NavUpdate] into the glanceable card that Zepp forwards to the
  * watch (e.g. Amazfit Active 2, 466×466 round): title must fit without

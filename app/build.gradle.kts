@@ -47,7 +47,6 @@ android {
 
     dependenciesInfo {
         includeInApk = false
-        includeInBundle = false
     }
 
     signingConfigs {
@@ -109,26 +108,9 @@ val copyVersionedReleaseApk = tasks.register<Copy>("copyVersionedReleaseApk") {
     }
 }
 
-val copyVersionedReleaseBundle = tasks.register<Copy>("copyVersionedReleaseBundle") {
-    doFirst {
-        layout.buildDirectory.dir("outputs/bundle/versioned").get().asFile
-            .listFiles { f -> f.name.endsWith(".aab") }?.forEach { it.delete() }
-    }
-    from(layout.buildDirectory.dir("outputs/bundle/release"))
-    into(layout.buildDirectory.dir("outputs/bundle/versioned"))
-    include("app-release.aab", "app-release-unsigned.aab")
-    rename { filename ->
-        if (filename.contains("unsigned")) {
-            "starpath-v$appVersionName-unsigned.aab"
-        } else {
-            "starpath-v$appVersionName.aab"
-        }
-    }
-}
-
-// Versioned copies are publish-only (release.yml checksums + docs).
+// Versioned copy is publish-only (release.yml checksums + docs).
 // Local builds stay on AGP defaults so ./gradlew assemble* does not
-// recreate outputs/apk/versioned or outputs/bundle/versioned.
+// recreate outputs/apk/versioned.
 if (System.getenv("GITHUB_ACTIONS") == "true") {
     tasks.matching { it.name == "assembleDebug" }.configureEach {
         finalizedBy(copyVersionedApk)
@@ -136,10 +118,6 @@ if (System.getenv("GITHUB_ACTIONS") == "true") {
 
     tasks.matching { it.name == "assembleRelease" }.configureEach {
         finalizedBy(copyVersionedReleaseApk)
-    }
-
-    tasks.matching { it.name == "bundleRelease" }.configureEach {
-        finalizedBy(copyVersionedReleaseBundle)
     }
 }
 

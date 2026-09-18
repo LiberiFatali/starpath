@@ -21,14 +21,14 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import app.starpath.BuildConfig
-import app.starpath.nav.KeepAliveService
-import app.starpath.nav.LastParse
-import app.starpath.nav.NavFormatter
-import app.starpath.nav.NavManeuver
-import app.starpath.nav.NavNotifier
-import app.starpath.nav.NavState
-import app.starpath.nav.NavUpdate
-import app.starpath.nav.StarPathListener
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
+import app.starpath.nav.parse.LastParse
+import app.starpath.nav.runtime.KeepAliveService
+import app.starpath.nav.runtime.NavFormatter
+import app.starpath.nav.runtime.NavNotifier
+import app.starpath.nav.runtime.StarPathListener
 
 /**
  * Onboarding and controls for StarPath:

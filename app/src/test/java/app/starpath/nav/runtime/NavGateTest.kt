@@ -1,8 +1,12 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
 
 class NavGateTest {
 

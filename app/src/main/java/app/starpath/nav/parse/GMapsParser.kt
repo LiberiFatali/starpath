@@ -1,5 +1,8 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 /**
  * Parses the Google Maps navigation notification into a [NavUpdate].
  *

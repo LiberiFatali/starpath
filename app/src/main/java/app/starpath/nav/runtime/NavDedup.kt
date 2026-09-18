@@ -1,5 +1,8 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
+import app.starpath.nav.model.NavManeuver
+import app.starpath.nav.model.NavState
+import app.starpath.nav.model.NavUpdate
 /**
  * Strict dedup for Maps countdown spam: Maps re-posts every 10–20 m while
  * only the distance shrinks. The parsed [NavUpdate] already splits

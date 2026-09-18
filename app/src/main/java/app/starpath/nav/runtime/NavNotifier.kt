@@ -1,4 +1,4 @@
-package app.starpath.nav
+package app.starpath.nav.runtime
 
 import android.app.Notification
 import android.app.NotificationChannel

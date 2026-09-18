@@ -53,7 +53,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 ## 2. Core Components
 
 ### `StarPathListener`
-* **File:** `app/src/main/java/app/starpath/nav/StarPathListener.kt`
+* **File:** `app/src/main/java/app/starpath/nav/runtime/StarPathListener.kt`
 * **Role:** Extends Android's `NotificationListenerService`.
 * **Behavior:**
   - Filters strictly for notifications originating from `com.google.android.apps.maps` with `FLAG_ONGOING_EVENT` (navigation phase only — transient Maps pushes are dropped before parsing). Parsed updates additionally pass the `NavGate` validity check (rerouting, known maneuver, icon verdict, or distance); non-navigation content such as crowdsource prompts never reaches the phone card or watch.
@@ -62,7 +62,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
   - Automatically cancels StarPath cards and tears down `KeepAliveService` when Google Maps navigation ends or is dismissed.
 
 ### `GMapsParser`
-* **File:** `app/src/main/java/app/starpath/nav/GMapsParser.kt`
+* **File:** `app/src/main/java/app/starpath/nav/parse/GMapsParser.kt`
 * **Role:** Pure functional parser that translates Google Maps notification text into structured `NavUpdate` objects.
 * **Capabilities:**
   - **Maneuver Detection:** Identifies turns (left, right, slight, sharp), U-turns, and arrivals. Roundabout/exit instructions carry no side for the watch and parse as `UNKNOWN` (`?`).
@@ -71,7 +71,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
   - **Status States:** Identifies rerouting states, searching for GPS, and final arrival.
 
 ### `NavAlertManager`
-* **File:** `app/src/main/java/app/starpath/nav/NavAlertManager.kt`
+* **File:** `app/src/main/java/app/starpath/nav/runtime/NavAlertManager.kt`
 * **Role:** Decides whether an incoming update should trigger an alert (vibrate & wake the watch display) or remain silent.
 * **Logic:**
   1. **Maneuver Change:** Always triggers an alert when the requested action changes (e.g. `STRAIGHT` -> `TURN_LEFT`).
@@ -81,7 +81,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
   4. **Cruising Straight:** Suppresses milestone alerts while maintaining a long straight path to prevent unnecessary vibrations and battery drain.
 
 ### `NavNotifier`
-* **File:** `app/src/main/java/app/starpath/nav/NavNotifier.kt`
+* **File:** `app/src/main/java/app/starpath/nav/runtime/NavNotifier.kt`
 * **Role:** Re-posts the parsed state as a **text-only** glance card
   (`title`/`text`/`sub` with `◀◀`/`▶▶`/`▲▲`/`?`, or `<-`/`->`/`^`/`?` in
   ASCII mode). No `largeIcon`
@@ -91,7 +91,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
   `IconClassifier` and re-emitted as marks (see §5).
 
 ### `KeepAliveService`
-* **File:** `app/src/main/java/app/starpath/nav/KeepAliveService.kt`
+* **File:** `app/src/main/java/app/starpath/nav/runtime/KeepAliveService.kt`
 * **Role:** Android foreground service configured with `foregroundServiceType="specialUse"`.
 * **Purpose:** Prevents Android's aggressive background battery manager from killing `StarPathListener` while the phone screen is locked in a pocket during a ride. Includes a direct "Stop" action on its ongoing notification for easy termination.
 
@@ -143,7 +143,7 @@ adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.
 > (`GMapsParser` extras parsing is the only text source; no RemoteViews).
 
 ### Step 2: Add a Test Case
-Open `app/src/test/java/app/starpath/nav/GMapsParserTest.kt` and add a unit test using the captured raw strings:
+Open `app/src/test/java/app/starpath/nav/parse/GMapsParserTest.kt` and add a unit test using the captured raw strings:
 ```kotlin
 @Test
 fun `parses new format correctly`() {

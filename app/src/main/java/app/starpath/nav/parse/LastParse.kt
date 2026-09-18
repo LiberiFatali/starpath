@@ -1,4 +1,4 @@
-package app.starpath.nav
+package app.starpath.nav.parse
 
 /**
  * Latest Maps parse outcome, kept in memory for the on-device debug screen
