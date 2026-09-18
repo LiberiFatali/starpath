@@ -1,0 +1,6 @@
+- Release 0.10.
+- chore(fdroid): sync metadata for v0.9 [skip ci]
+- feat(nav): improve formatting and filter non-nav push updates
+- refactor(nav): reorganize classes into model, parse, and runtime packages
+- docs(fdroid): update metadata and release builds config
+- release: bump to v0.10
