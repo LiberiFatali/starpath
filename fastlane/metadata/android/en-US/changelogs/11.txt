@@ -1,0 +1,4 @@
+- Release 0.11.
+- chore(fdroid): sync metadata for v0.10 [skip ci]
+- feat(nav): prefix subtext trip with DEST
+- release: bump to v0.11
