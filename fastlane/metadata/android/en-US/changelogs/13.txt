@@ -1,0 +1,5 @@
+- Release 0.13.
+- chore(fdroid): sync metadata for v0.12 [skip ci]
+- feat(nav): restrict parser to English and prioritize icon matching
+- refactor(parse): Document safety margin in IconClassifier TURN_DELTA
+- release: bump to v0.13
