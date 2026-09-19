@@ -31,10 +31,9 @@ class StarPathListener : NotificationListenerService() {
         // are never ongoing — drop them before parsing so nothing reaches
         // the phone card or the watch outside navigation.
         if (!sbn.notification.flags.hasFlag(Notification.FLAG_ONGOING_EVENT)) return
-        // Lightweight pipeline: extras text first, largeIcon arrow pixels
-        // when the text has no verb. Decision order: text verb > icon
-        // moments > UNKNOWN (never fake-straight).
-        // Decision order: text verb > icon match > UNKNOWN (never fake-straight).
+        // Lightweight pipeline: largeIcon arrow pixels first, extras text
+        // as fallback. Decision order: confident icon > text verb > UNKNOWN
+        // (never fake-straight; bare "toward X" is UNKNOWN).
         // The watch only shows text glyphs, so the icon verdict is rendered
         // as a glyph too — see IconClassifier KDoc.
         val outcome = MapsRemoteParser.parseOutcome(sbn, this)
@@ -44,7 +43,9 @@ class StarPathListener : NotificationListenerService() {
         // Navigation-phase validity gate (defense in depth behind the ongoing
         // flag): drop non-navigation content that still parses, e.g. an
         // UNKNOWN prompt with no distance. Diagnostics are already stored.
-        if (!NavGate.shouldForward(update, outcome.appliedIcon)) return
+        // Rerouting never latches: any live ENROUTE instruction clears a
+        // stale REROUTING card (state-transition bypass inside shouldForward).
+        if (!NavGate.shouldForward(update, outcome.appliedIcon, lastPosted)) return
 
         // Strict dedup: Maps re-posts every 10–20 m with only the distance
         // shrinking. The parsed update already splits direction (maneuver)

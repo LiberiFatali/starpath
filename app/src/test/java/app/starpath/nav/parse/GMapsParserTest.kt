@@ -26,16 +26,16 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `vietnamese turn`() {
+    fun `english turn with decimal kilometers`() {
         val u = GMapsParser.parse(
-            title = "Rẽ phải sau 1,2 km vào Lê Lợi",
-            text = "Lê Lợi",
+            title = "Turn right after 1.2 km onto Le Loi",
+            text = "Le Loi",
             bigText = null,
             textLines = emptyList(),
         )!!
         assertEquals(NavManeuver.TURN_RIGHT, u.maneuver)
         assertEquals(1200, u.distanceMeters)
-        assertEquals("Lê Lợi", u.street)
+        assertEquals("Le Loi", u.street)
     }
 
     @Test
@@ -63,10 +63,6 @@ class GMapsParserTest {
             NavManeuver.UTURN,
             GMapsParser.parse("Make a U-turn in 100 m", null, null, emptyList())!!.maneuver,
         )
-        assertEquals(
-            NavManeuver.UTURN,
-            GMapsParser.parse("Quay đầu sau 100 m", null, null, emptyList())!!.maneuver,
-        )
     }
 
     @Test
@@ -82,14 +78,14 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `rerouting detected EN and VI`() {
+    fun `rerouting detected`() {
         assertEquals(
             NavState.REROUTING,
             GMapsParser.parse("Rerouting…", null, null, emptyList())!!.state,
         )
         assertEquals(
             NavState.REROUTING,
-            GMapsParser.parse("Đang tìm tuyến đường mới", null, null, emptyList())!!.state,
+            GMapsParser.parse("Recalculating route…", null, null, emptyList())!!.state,
         )
     }
 
@@ -119,15 +115,26 @@ class GMapsParserTest {
     }
 
     @Test
-    fun `ahead does not force straight`() {
+    fun `ahead does not force straight, compass headings defer to icon`() {
         // "head" substring must not match "ahead".
         assertEquals(
             NavManeuver.UNKNOWN,
             GMapsParser.detectManeuver("Sharp curve ahead in 200 m"),
         )
+        // Compass headings are orientation, not maneuvers (field:
+        // maps_starpath_head_south) — UNKNOWN so the icon decides.
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.detectManeuver("Head north on Main St"),
+        )
+        assertEquals(
+            NavManeuver.UNKNOWN,
+            GMapsParser.detectManeuver("Head south on Main St"),
+        )
+        // Explicit straight phrasing still counts.
         assertEquals(
             NavManeuver.STRAIGHT,
-            GMapsParser.detectManeuver("Head north on Main St"),
+            GMapsParser.detectManeuver("Head straight on Main St"),
         )
         assertEquals(
             NavManeuver.STRAIGHT,
@@ -142,21 +149,23 @@ class GMapsParserTest {
         assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Take the ramp onto Highway 1"))
         assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Merge onto Highway 1 in 500 m"))
         assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("Take exit 5 in 1 km"))
-        assertEquals(NavManeuver.KEEP_LEFT, GMapsParser.detectManeuver("Giữ làn trái"))
-        assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Chếch phải"))
+        assertEquals(NavManeuver.KEEP_LEFT, GMapsParser.detectManeuver("Keep left to stay on Highway 1"))
+        assertEquals(NavManeuver.SLIGHT_RIGHT, GMapsParser.detectManeuver("Slight right in 100 m"))
         // Trip summary must not false-positive on "km left".
         assertEquals(NavManeuver.UNKNOWN, GMapsParser.detectManeuver("12 min · 3.2 km left"))
     }
 
     @Test
-    fun `bare toward is straight but never shadows verbs`() {
-        // Screenshot case: Maps posts "toward X" with a straight arrow.
+    fun `bare toward is unknown, defers to icon`() {
+        // Field case turn_right_with_toward_text: "toward X" text with a
+        // right-turn arrow. Text alone carries no direction — UNKNOWN so the
+        // icon classifier decides, never a fake straight.
         assertEquals(
-            NavManeuver.STRAIGHT,
+            NavManeuver.UNKNOWN,
             GMapsParser.detectManeuver("toward P. Nguyen Co Thach"),
         )
         assertEquals(
-            NavManeuver.STRAIGHT,
+            NavManeuver.UNKNOWN,
             GMapsParser.detectManeuver("Towards Nguyen Hue in 100 m"),
         )
         // Real verbs keep priority over "toward".

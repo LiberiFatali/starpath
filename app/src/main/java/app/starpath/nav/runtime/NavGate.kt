@@ -17,14 +17,32 @@ import app.starpath.nav.model.NavUpdate
 object NavGate {
 
     /**
-     * @param appliedIcon true when [IconClassifier] overrode an UNKNOWN text
-     *   verdict (icon-only turn instruction — a real navigation state whose
-     *   maneuver is already copied onto [NavUpdate.maneuver]).
+     * @param appliedIcon true when [IconClassifier] decided the final
+     *   maneuver (icon-first; text is the fallback for icon-missing or
+     *   low-confidence frames).
      */
     fun shouldForward(update: NavUpdate, appliedIcon: Boolean): Boolean {
         if (update.state == NavState.REROUTING) return true
         if (appliedIcon) return true
         if (update.maneuver != NavManeuver.UNKNOWN) return true
         return update.distanceMeters != null
+    }
+
+    /**
+     * Rerouting is transient, never latched: any live ENROUTE instruction
+     * with a street clears a stale REROUTING card, even when weak
+     * (UNKNOWN + no distance — the RemoteViews-only distance shape).
+     * Without this the watch freezes on "… Rerouting" after Maps has
+     * already recovered (field: no_text_rerouting).
+     */
+    fun shouldForward(update: NavUpdate, appliedIcon: Boolean, lastPosted: NavUpdate?): Boolean {
+        if (lastPosted != null &&
+            lastPosted.state == NavState.REROUTING &&
+            update.state == NavState.ENROUTE &&
+            update.street.isNotBlank()
+        ) {
+            return true
+        }
+        return shouldForward(update, appliedIcon)
     }
 }

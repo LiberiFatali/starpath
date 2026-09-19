@@ -168,7 +168,7 @@ Ensure all tests pass before submitting changes.
 
 ---
 
-## 5. Direction Pipeline: Text Marks via Text → Icon → Unknown
+## 5. Direction Pipeline: Text Marks via Icon → Text → Unknown
 
 **Constraint (verified Sep 2026).** The Amazfit Active 2 shows only notification *text*;
 Maps often posts *icon-only* instructions (`40 m` + street name, no turn verb —
@@ -179,12 +179,10 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
 
 **Decision order** (`StarPathListener` → `MapsRemoteParser.parseOutcome`):
 
-1. **Text verb** (`GMapsParser`): extras only
-   (`title → bigText → text → textLines`;
-   `subText` feeds the trip line only, never distance). Proven cases:
-   `Head south → ▲▲`, `Turn left … → ◀◀`, bare `toward X → ▲▲` (straight
-   phrasing; turn/exit/keep verbs keep priority above it).
-2. **Icon match** (`IconClassifier`): only when text yields `UNKNOWN`.
+1. **Icon match** (`IconClassifier`): always tried on ENROUTE frames.
+   Confident verdict wins (language-free; immune to ambiguous phrasing like
+   bare `toward X` — field case `turn_right_with_toward_text`: right-turn
+   arrow with "toward …" text).
    Captures the notification large icon bitmap, binarizes by
    minority brightness polarity (works white-on-teal and dark-on-light),
    downscales to a 16×16 mask, recenters to the foreground bounding box, then
@@ -207,6 +205,15 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
    Maps never points backwards, so there is no down-head. Thickness, dash
    style, and shift cancel out. The 16×16 mask and per-direction scores are
    logged to the `LastParse` debug dump for field harvesting.
+2. **Text verb** (`GMapsParser`, English only): fallback for
+   icon-missing/low-confidence frames; extras only
+   (`title → bigText → text → textLines`;
+   `subText` feeds the trip line only, never distance). Set the phone locale
+   to English so Maps emits English strings; street names pass through
+   verbatim (diacritics kept). Proven cases: `Turn left … → ◀◀`,
+   `Head straight/up … → ▲▲`, bare `toward X → ?` and compass
+   `Head north/south/… → ?` (both direction-neutral — the icon decides;
+   turn/exit/keep/roundabout guards keep priority above them).
 3. **`UNKNOWN → ?`**: never a fake straight arrow — the mark renders
     a distinct `?`. Display is `◀◀ / ▶▶ / ▲▲ / DEST / ?`
     (ASCII `<- / -> / ^ / DEST / ?`): left/right families
@@ -218,14 +225,17 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
     direction/place/state change, so 10–20 m countdown ticks are skipped.
 
 **Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
-`▲▲` correct; icon-only `40 m` + street + left-hook → `◀◀` via moments;
+`▲▲` via icon (text yields `?`); icon-only `40 m` + street + left-hook → `◀◀` via moments;
 `260 m` + street + thick right-hook → `▶▶ R=0.89 applied=true`
-(`3_maps_starpath_turn_right.jpg`). Note: icon-only extras carry no
+(`3_maps_starpath_turn_right.jpg`); `toward P. Nguyen Co Thach` + right-turn
+arrow → `▶▶` via icon (text yields `?`, never fake-straight). Note: icon-only extras carry no
 next-turn distance (trip line holds remaining distance), so these cards
-render mark + street until distance is reworked.
+render mark + street. Rerouting never latches: any live ENROUTE instruction
+with a street clears a stale REROUTING card even when weak (`?` + street,
+field: `no_text_rerouting`) — see `NavGate.shouldForward(update, appliedIcon, lastPosted)`.
 
 **Files:** `nav/MapsRemoteParser.kt` (extras + largeIcon pixels + `Outcome`),
 `nav/IconClassifier.kt` (pure, JVM-tested), `nav/GMapsParser.kt` (keyword
 fallback), `nav/LastParse.kt` + `MainActivity` debug card (phone-only
 diagnostics). Tests: `IconClassifierTest` (polarity/shift/noise/blank/thick-field-hooks),
-`GMapsParserTest` (`toward` priority, subText trip-only).
+`GMapsParserTest` (`toward`→`?` defer-to-icon, subText trip-only).

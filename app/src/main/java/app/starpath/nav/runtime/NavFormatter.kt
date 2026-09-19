@@ -49,7 +49,7 @@ object NavFormatter {
     }
 
     private val tripDistance = Regex("""([\d.,]+\s*(?:km|m|mi|ft|yd))\b(?!/h)""")
-    private val tripDuration = Regex("""(?i)(\d+\s*(?:mins?|minutes?|phút|giờ|hrs?|hours?))\b""")
+    private val tripDuration = Regex("""(?i)(\d+\s*(?:mins?|minutes?|hrs?|hours?))\b""")
 
     /**
      * Compacts the Maps trip header to remaining distance + duration, e.g.

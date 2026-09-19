@@ -11,14 +11,15 @@ import app.starpath.nav.model.NavState
 import app.starpath.nav.model.NavUpdate
 
 /**
- * Lightweight Maps notification parser: `extras` text first, `largeIcon`
- * arrow pixels when the text has no turn verb.
+ * Lightweight Maps notification parser: `largeIcon` arrow pixels first,
+ * `extras` text as fallback.
  *
  * Deliberately no RemoteViews inflation (no `createPackageContext`,
  * `LayoutInflater`, view-id maps): it was heavy, fragile across Maps
  * releases, and unnecessary once the icon classifier handles icon-only
  * instructions ("40 m" + street → `◀◀`/`▶▶` via moments).
- * [GMapsParser] does the keyword parsing; [IconClassifier] the pixels.
+ * [IconClassifier] decides direction when confident; [GMapsParser] covers
+ * the rest (street/trip, rerouting, text-only verbs, icon-missing frames).
  */
 object MapsRemoteParser {
 
@@ -29,7 +30,7 @@ object MapsRemoteParser {
      * Full pipeline result for one Maps post, including everything the
      * on-device debug screen needs. [iconManeuver] is the classifier verdict
      * on the Maps arrow pixels (null when no icon was captured);
-     * [appliedIcon] is true when the icon overrode an UNKNOWN text verdict.
+     * [appliedIcon] is true when the icon decided the final maneuver.
      */
     data class Outcome(
         val update: NavUpdate?,
@@ -46,7 +47,7 @@ object MapsRemoteParser {
     )
 
     /**
-     * End-to-end parse: extras text, then largeIcon pixels when UNKNOWN.
+     * End-to-end parse: largeIcon pixels first, extras text as fallback.
      * Never throws; a null [Outcome.update] with a note means "nothing
      * usable" and the caller should skip the post.
      */
@@ -83,16 +84,18 @@ object MapsRemoteParser {
             )
         }
 
-        // Icon-only instructions ("40 m" + street, no verb): the arrow pixels
-        // are the only direction signal. Text verdict wins when it knows;
-        // moments (topMeanX − bottomMeanX) ignore shaft thickness/style.
+        // Icon-first: the arrow is the direction signal (language-free,
+        // immune to ambiguous phrasing like bare "toward X" — field case
+        // turn_right_with_toward_text). Text is the fallback for icon-missing
+        // or low-confidence frames; moments (topMeanX − bottomMeanX) ignore
+        // shaft thickness/style.
         var iconManeuver: NavManeuver? = null
         var iconScore = 0.0
         var appliedIcon = false
         var maskArt = ""
         var headScores = ""
         var suppressNote = ""
-        if (update.state == NavState.ENROUTE && update.maneuver == NavManeuver.UNKNOWN) {
+        if (update.state == NavState.ENROUTE) {
             val pixels = parseIconPixels(sbn, context)
             if (pixels != null) {
                 val detail = IconClassifier.classifyDetailed(pixels)
@@ -103,6 +106,7 @@ object MapsRemoteParser {
                     val tag = when (m) {
                         NavManeuver.TURN_LEFT -> "L"
                         NavManeuver.TURN_RIGHT -> "R"
+                        NavManeuver.STRAIGHT -> "S"
                         NavManeuver.DESTINATION -> "D"
                         else -> "U"
                     }
@@ -111,12 +115,19 @@ object MapsRemoteParser {
                 if (detail.maneuver != NavManeuver.UNKNOWN) {
                     // A destination pin only appears at arrival: far from it
                     // the icon is a lookalike (e.g. roundabout loop), so stay
-                    // UNKNOWN (`?`) instead of posting a false DEST.
+                    // on the text verdict instead of posting a false DEST.
                     if (detail.maneuver == NavManeuver.DESTINATION &&
                         !GMapsParser.isPlausibleDestination(update.tripLine)
                     ) {
                         suppressNote = " icon DEST suppressed (trip far)"
                     } else {
+                        if (update.maneuver != detail.maneuver) {
+                            suppressNote = if (update.maneuver == NavManeuver.UNKNOWN) {
+                                " icon→${detail.maneuver}"
+                            } else {
+                                " icon→${detail.maneuver} over text ${update.maneuver}"
+                            }
+                        }
                         update = update.copy(maneuver = detail.maneuver)
                         appliedIcon = true
                     }
@@ -135,7 +146,6 @@ object MapsRemoteParser {
             headScores = headScores,
             note = buildString {
                 append("source=$source")
-                if (appliedIcon) append(" icon→${update.maneuver}")
                 append(suppressNote)
             },
         )

@@ -52,4 +52,30 @@ class NavGateTest {
         val rerouting = NavUpdate(NavManeuver.UNKNOWN, "", null, "Rerouting…", "", NavState.REROUTING)
         assertTrue(NavGate.shouldForward(rerouting, appliedIcon = false))
     }
+
+    @Test
+    fun `weak enroute clears stale rerouting, junk still dropped without history`() {
+        // Field: no_text_rerouting — Maps recovered but the watch froze on
+        // "… Rerouting" because the weak instruction frame was gated.
+        val rerouting = NavUpdate(NavManeuver.UNKNOWN, "", null, "Rerouting…", "", NavState.REROUTING)
+        val weakInstruction = NavUpdate(
+            maneuver = NavManeuver.UNKNOWN,
+            distanceText = "",
+            distanceMeters = null,
+            street = "CT37 Đ. Vành Đai 3",
+            tripLine = "",
+            state = NavState.ENROUTE,
+        )
+        assertTrue(NavGate.shouldForward(weakInstruction, appliedIcon = false, lastPosted = rerouting))
+        // No history: same weak shape is still dropped (crowdsource guard).
+        assertFalse(NavGate.shouldForward(weakInstruction, appliedIcon = false, lastPosted = null))
+        // Blank street: not a live instruction, still dropped.
+        assertFalse(
+            NavGate.shouldForward(
+                weakInstruction.copy(street = ""),
+                appliedIcon = false,
+                lastPosted = rerouting,
+            ),
+        )
+    }
 }
