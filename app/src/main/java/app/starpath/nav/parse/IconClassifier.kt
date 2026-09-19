@@ -36,7 +36,7 @@ object IconClassifier {
     const val GRID = 16
     /** Minimum confidence for a direction verdict to be trusted. */
     const val HEAD_THRESHOLD = 0.55
-    /** |topMeanX − bottomMeanX| at or above this means a turn. */
+    /** |topMeanX − bottomMeanX| at or above this means a turn. Safety: gentle bends stay TURN — a missed fork costs more than a false alert. */
     internal const val TURN_DELTA = 1.5
     /** Bounding-box height below this carries no direction (chevrons, heads). */
     internal const val MIN_HEIGHT = 8
