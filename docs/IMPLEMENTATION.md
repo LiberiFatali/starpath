@@ -76,9 +76,8 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **Logic:**
   1. **Maneuver Change:** Always triggers an alert when the requested action changes (e.g. `STRAIGHT` -> `TURN_LEFT`).
   2. **Milestone Crossed:** Triggers an alert when approaching a turn and crossing key distance thresholds:
-     - `500 m` → `200 m` → `100 m` → `50 m`
-  3. **Stay-Awake Pulse:** If within `300 m` of an active turn and the watch screen has likely turned off (elapsed time ≥ 18s), sends a gentle alert pulse to refresh the card on the watch screen.
-  4. **Cruising Straight:** Suppresses milestone alerts while maintaining a long straight path to prevent unnecessary vibrations and battery drain.
+     - `200 m` → `100 m` → `50 m`
+  3. **Cruising Straight:** Suppresses milestone alerts while maintaining a long straight path to prevent unnecessary vibrations and battery drain.
 
 ### `NavNotifier`
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavNotifier.kt`
@@ -119,7 +118,7 @@ See `docs/COMPATIBILITY.md` for the supported-device model (any Zepp-App-paired 
 ### Watch Display Lifespan
 Smartwatches typically shut off their screen after 5 to 10 seconds to conserve battery:
 * **Recommended Watch Setting:** In watch **Settings** → **Display** → **Screen-on Duration** (or **Auto Screen Off**), set to **15s – 30s**.
-* **Automated Wakeup:** StarPath's `NavAlertManager` milestone events and 18s approach pulse ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
+* **Automated Wakeup:** StarPath's `NavAlertManager` milestone events (200/100/50 m) ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
 
 ---
 
