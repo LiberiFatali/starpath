@@ -1,0 +1,6 @@
+- Release 0.14.
+- chore(fdroid): sync metadata for v0.13 [skip ci]
+- refactor(nav): remove timer-based stay-awake pulse from NavAlertManager
+- Revert "refactor(nav): remove timer-based stay-awake pulse from NavAlertManager"
+- refactor(nav): remove next-turn distance parsing and milestones
+- release: bump to v0.14
