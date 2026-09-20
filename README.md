@@ -14,8 +14,8 @@
    Download the latest signed `starpath-v*.apk` from **GitHub Releases** and install it on your Android phone.
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
-3. **Enable in Zepp App**:
-   In the Zepp App, open your paired watch (e.g. Amazfit Active 2) and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet).
+3. **Enable in Zepp App or Gadgetbridge (keep only one)**:
+    In the Zepp App, open your paired watch and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet). Prefer Gadgetbridge? Pair the watch there instead and set Pebble Messages to **Always**. Keeping both installed blocks StarPath.
 4. **Ride with Google Maps**:
    Start navigation in Google Maps. StarPath starts automatically in the background, delivers live turn updates and vibration pulses before intersections, and shuts itself down when you arrive.
 

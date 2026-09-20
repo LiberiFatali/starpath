@@ -240,3 +240,41 @@ field: `no_text_rerouting`) — see `NavGate.shouldForward(update, appliedIcon, 
 fallback), `nav/LastParse.kt` + `MainActivity` debug card (phone-only
 diagnostics). Tests: `IconClassifierTest` (polarity/shift/noise/blank/thick-field-hooks),
 `GMapsParserTest` (`toward`→`?` defer-to-icon, subText trip-only).
+
+---
+
+## 6. Delivery Paths: Zepp xor Gadgetbridge (One at a Time)
+
+The parsed `NavFormatter.Card` reaches the watch through **exactly one**
+companion app. `DeliveryPaths.resolve()` probes `PackageManager` for the
+two known packages (`com.huami.watch.hmwatchmanager`,
+`nodomain.freeyourgadget.gadgetbridge`) **once** — the choice is persisted
+in `starpath_prefs` at first run and trusted afterwards, so the listener hot
+path performs zero probes per Maps post. It is re-resolved on every
+`MainActivity` open (opening the app is already part of every setup/debug
+flow); installs/uninstalls in between take effect at the next open:
+
+| Zepp | Gadgetbridge | Path |
+|---|---|---|
+| ✅ | ❌ | Zepp: `NavNotifier.post()` re-posts the phone card it mirrors (§3, unchanged) |
+| ❌ | ✅ | Gadgetbridge: `GadgetbridgeSender` fires `com.getpebble.action.SEND_NOTIFICATION` / `PEBBLE_ALERT` with `notificationData=[{"title","body"}]`, explicitly addressed via `setPackage(...)` — same card (title → title, text+sub → body), fire-and-forget |
+| ✅ | ✅ | **Blocked** (`BLOCKED_BOTH`): two feeders fight over the watch's single BLE link (reconnect loop observed Sep 2026) |
+| ❌ | ❌ | **Blocked** (`BLOCKED_NONE`) |
+
+Blocked states start nothing: the `StarPathListener` gate sits **before**
+parsing (no `KeepAliveService`), records the reason via
+`LastParse.storeSkipped`, and posts one muted `starpath_setup`-channel
+notice per Maps session (tap → `MainActivity`; auto-cancelled once exactly
+one app is installed). `MainActivity` mirrors the state in its status line,
+and both test-card buttons obey the same gate.
+
+Manifest note: a `<queries>` block for both packages is required — without
+it, `getPackageInfo` throws on API 30+ and every install reads as absent
+(field catch, Sep 2026). No new permission. Watch-side prereq for the GB
+path: Gadgetbridge → Pebble Messages → **Always** (field-verified on
+Amazfit Active 2, Sep 2026).
+
+**Files:** `nav/runtime/DeliveryPath.kt` (`DeliveryPaths.resolve`, JVM-tested
+matrix), `nav/runtime/GadgetbridgeSender.kt` (pure JSON builder, JVM-tested;
+thin `sendBroadcast` wrapper). Tests: `DeliveryPathTest`, `GadgetbridgeSenderTest`.
+See `docs/COMPATIBILITY.md` for the user-facing one-app rule.

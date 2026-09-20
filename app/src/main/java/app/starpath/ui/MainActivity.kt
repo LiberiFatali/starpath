@@ -25,6 +25,9 @@ import app.starpath.nav.model.NavManeuver
 import app.starpath.nav.model.NavState
 import app.starpath.nav.model.NavUpdate
 import app.starpath.nav.parse.LastParse
+import app.starpath.nav.runtime.DeliveryPath
+import app.starpath.nav.runtime.DeliveryPaths
+import app.starpath.nav.runtime.GadgetbridgeSender
 import app.starpath.nav.runtime.KeepAliveService
 import app.starpath.nav.runtime.NavFormatter
 import app.starpath.nav.runtime.NavNotifier
@@ -59,6 +62,26 @@ class MainActivity : Activity() {
         getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
             .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
 
+    /**
+     * Active delivery path: the stored one-time choice (first run), refreshed
+     * on every app open (see [onResume]). The listener hot path reads the
+     * same stored value, so no PackageManager probe happens per Maps post.
+     */
+    private fun deliveryPath() =
+        DeliveryPaths.loadOrResolve(
+            getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE),
+        ) { DeliveryPaths.isInstalled(packageManager, it) }
+
+    private fun deliveryLine(path: DeliveryPath): String =
+        when (path) {
+            DeliveryPath.ZEPP -> "Delivery: Zepp App ✓"
+            DeliveryPath.GADGETBRIDGE -> "Delivery: Gadgetbridge ✓"
+            DeliveryPath.BLOCKED_BOTH ->
+                "Delivery: BLOCKED ✗ (keep only Zepp or only Gadgetbridge)"
+            DeliveryPath.BLOCKED_NONE ->
+                "Delivery: BLOCKED ✗ (install Zepp or Gadgetbridge)"
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         NavNotifier(this).ensureChannels()
@@ -92,7 +115,6 @@ class MainActivity : Activity() {
 
         addButton("Send test card to watch") {
             sendTestCard()
-            Toast.makeText(this, "Test card sent! Check phone notification & watch", Toast.LENGTH_SHORT).show()
         }
 
         addButton("Send test card in 5s (lock your screen)") {
@@ -176,16 +198,15 @@ class MainActivity : Activity() {
 
         val help = TextView(this).apply {
             textSize = 14f
-            text = "\nOn the watch & Zepp App (e.g. Amazfit Active 2):\n" +
-                "1. In the Zepp App, open your paired watch and enable notification/alert mirroring, then select “StarPath” (send a test card first if StarPath isn't listed yet).\n" +
-                "2. Keep notification longer on watch:\n" +
-                "   • On watch: display/screen settings → screen-on duration → set to 15s–30s.\n" +
-                "   • StarPath automatically re-wakes the watch at milestones (500m, 200m, 100m, 50m) and pulses every 18s approaching turns.\n" +
-                "3. If your companion app has a “receive only when phone screen is off” option and it is ON, either turn it OFF for testing or use the 5s delayed button and lock your phone.\n" +
-                "4. Ensure watch Do Not Disturb (DND) / Sleep Mode is OFF and the watch stays connected over Bluetooth.\n\n" +
-                "Then navigate in Google Maps with phone in your pocket — " +
-                "background service starts automatically and turn cards appear live on the watch. " +
-                "When navigation ends, the background service stops itself."
+            text = "\nOne watch app only: Zepp or Gadgetbridge (both installed blocks StarPath).\n" +
+                "\nZepp: enable notification mirroring, then select StarPath.\n" +
+                "Gadgetbridge: set Pebble Messages to Always.\n" +
+                "\nOn the watch: screen-on duration 15s–30s, DND off, stay connected over Bluetooth.\n" +
+                "StarPath re-wakes the watch on each turn and repeats every 30s until the turn changes.\n" +
+                "Cards only arrive with the screen off? Turn that option off in your companion app " +
+                "— or use the 5s button and lock the phone.\n" +
+                "\nNavigate in Google Maps with the phone in your pocket — " +
+                "StarPath starts and stops itself."
         }
         layout.addView(help)
         setContentView(ScrollView(this).apply { addView(layout) })
@@ -281,18 +302,32 @@ class MainActivity : Activity() {
         isNotificationListenerEnabled() && isNotificationsEnabled() && isBatteryOptimizationDisabled()
 
     private fun sendTestCard() {
-        NavNotifier(this).post(
-            NavFormatter.toCard(
-                NavUpdate(
-                    maneuver = NavManeuver.TURN_LEFT,
-                    street = "Nguyen Hue",
-                    tripLine = "12 min · 3.2 km left",
-                    state = NavState.ENROUTE,
-                ),
-                isAsciiArrows(),
+        val card = NavFormatter.toCard(
+            NavUpdate(
+                maneuver = NavManeuver.TURN_LEFT,
+                street = "Nguyen Hue",
+                tripLine = "12 min · 3.2 km left",
+                state = NavState.ENROUTE,
             ),
-            alert = true,
+            isAsciiArrows(),
         )
+        // Test cards obey the same single-path gate as live navigation.
+        when (val path = deliveryPath()) {
+            DeliveryPath.GADGETBRIDGE -> {
+                if (GadgetbridgeSender(this).send(card)) {
+                    Toast.makeText(this, "Test card sent via Gadgetbridge! Check watch", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Gadgetbridge send failed — is it still installed?", Toast.LENGTH_LONG).show()
+                }
+            }
+            DeliveryPath.ZEPP -> {
+                NavNotifier(this).post(card, alert = true)
+                Toast.makeText(this, "Test card sent! Check phone notification & watch", Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                Toast.makeText(this, deliveryLine(path), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun refreshAsciiButton() {
@@ -309,6 +344,11 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // Re-resolve on every open so install/uninstall changes take effect;
+        // opening the app is already part of every setup/debug flow.
+        DeliveryPaths.refreshStored(
+            getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE),
+        ) { DeliveryPaths.isInstalled(packageManager, it) }
         refreshStatus()
         when (pendingStep) {
             PendingStep.BATTERY -> {
@@ -357,6 +397,7 @@ class MainActivity : Activity() {
         status.text = "Notification Access: ${if (listenerOn) "ON ✓" else "OFF ✗"}\n" +
             "StarPath Notifications: ${if (notifsOk) "ON ✓" else "OFF ✗"}\n" +
             "Battery Optimization: ${if (batteryOk) "unrestricted ✓" else "optimized ✗"}\n" +
+            "${deliveryLine(deliveryPath())}\n" +
             "Background Listener: Automatic (starts when navigating in Maps) ✓"
 
         if (allOk) {

@@ -10,18 +10,24 @@ import app.starpath.nav.parse.MapsRemoteParser
 
 /**
  * Intercepts the Google Maps navigation notification, parses it, and
- * re-posts it as StarPath's glanceable card (which Zepp forwards to the watch).
+ * delivers it as a glanceable turn card through exactly one companion app:
+ * the Zepp App (phone notification it forwards over BLE) or Gadgetbridge
+ * (PebbleKit broadcast). Both installed — or neither — blocks all delivery
+ * until the user keeps exactly one (see [DeliveryPaths]).
  */
 class StarPathListener : NotificationListenerService() {
 
     private lateinit var notifier: NavNotifier
+    private lateinit var gbSender: GadgetbridgeSender
     private val alertManager = NavAlertManager()
     private var mapsActive = false
+    private var blockedNotified = false
     internal var lastPosted: NavUpdate? = null
 
     override fun onCreate() {
         super.onCreate()
         notifier = NavNotifier(this).also { it.ensureChannels() }
+        gbSender = GadgetbridgeSender(this)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -31,6 +37,25 @@ class StarPathListener : NotificationListenerService() {
         // are never ongoing — drop them before parsing so nothing reaches
         // the phone card or the watch outside navigation.
         if (!sbn.notification.flags.hasFlag(Notification.FLAG_ONGOING_EVENT)) return
+        // Single-path gate over the stored one-time choice (chosen at first
+        // run, refreshed on every MainActivity open — no per-post probing).
+        // Blocked states start nothing: no parsing, no KeepAlive, one notice
+        // per Maps session explaining why.
+        val path = DeliveryPaths.loadOrResolve(
+            getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE),
+        ) { DeliveryPaths.isInstalled(packageManager, it) }
+        if (!path.isDeliverable) {
+            LastParse.storeSkipped(blockedReason(path))
+            if (!blockedNotified) {
+                notifier.postBlockedNotice(path)
+                blockedNotified = true
+            }
+            return
+        }
+        if (blockedNotified) {
+            notifier.cancelBlockedNotice()
+            blockedNotified = false
+        }
         // Lightweight pipeline: largeIcon arrow pixels first, extras text
         // as fallback. Decision order: confident icon > text verb > UNKNOWN
         // (never fake-straight; bare "toward X" is UNKNOWN).
@@ -70,13 +95,21 @@ class StarPathListener : NotificationListenerService() {
         val useAscii = getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
             .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
         val card = NavFormatter.toCard(update, useAscii)
-        notifier.post(card, alert = alertDecision.shouldAlert)
+        // Exactly one path fires per card: Zepp re-posts the phone
+        // notification it mirrors; Gadgetbridge gets the same card as a
+        // PebbleKit broadcast (fire-and-forget, no phone notification).
+        when (path) {
+            DeliveryPath.GADGETBRIDGE -> gbSender.send(card)
+            else -> notifier.post(card, alert = alertDecision.shouldAlert)
+        }
         lastPosted = update
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        if (sbn.packageName != GMapsParser.MAPS_PACKAGE || !mapsActive) return
-        // Maps cleared its navigation session -> clear our card too.
+        if (sbn.packageName != GMapsParser.MAPS_PACKAGE) return
+        if (!mapsActive && !blockedNotified) return
+        // Maps cleared its navigation session -> clear our card too, and
+        // arm the blocked notice again for the next session if still blocked.
         val stillThere = try {
             activeNotifications?.any {
                 it != null &&
@@ -85,11 +118,14 @@ class StarPathListener : NotificationListenerService() {
             } ?: false
         } catch (_: Exception) { true }
         if (!stillThere) {
-            mapsActive = false
-            alertManager.reset()
-            lastPosted = null
-            notifier.cancel()
-            KeepAliveService.stop(this)
+            if (mapsActive) {
+                mapsActive = false
+                alertManager.reset()
+                lastPosted = null
+                notifier.cancel()
+                KeepAliveService.stop(this)
+            }
+            blockedNotified = false
         }
     }
 
@@ -99,4 +135,12 @@ class StarPathListener : NotificationListenerService() {
     }
 
     private fun Int.hasFlag(flag: Int): Boolean = (this and flag) == flag
+
+    private fun blockedReason(path: DeliveryPath): String =
+        when (path) {
+            DeliveryPath.BLOCKED_BOTH ->
+                "blocked: both Zepp and Gadgetbridge installed — keep only one"
+            else ->
+                "blocked: neither Zepp nor Gadgetbridge installed"
+        }
 }

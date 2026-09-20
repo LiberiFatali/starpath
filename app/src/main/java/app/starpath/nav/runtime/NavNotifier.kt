@@ -20,6 +20,8 @@ class NavNotifier(private val context: Context) {
         const val NOTIF_ID = 1001
         const val KEEPALIVE_CHANNEL_ID = "starpath_keepalive"
         const val KEEPALIVE_ID = 1002
+        const val SETUP_CHANNEL_ID = "starpath_setup"
+        const val SETUP_NOTIF_ID = 1003
     }
 
     private val manager: NotificationManager =
@@ -48,6 +50,16 @@ class NavNotifier(private val context: Context) {
                 KEEPALIVE_CHANNEL_ID, "StarPath listener",
                 NotificationManager.IMPORTANCE_MIN,
             ).apply { description = "Keeps navigation listening alive" }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SETUP_CHANNEL_ID, "StarPath setup problems",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "One-off notices when watch delivery is blocked"
+                enableVibration(false)
+                setSound(null, null)
+            }
         )
     }
 
@@ -83,6 +95,44 @@ class NavNotifier(private val context: Context) {
     }
 
     fun cancel() = manager.cancel(NOTIF_ID)
+
+    /**
+     * One-shot setup notice for the blocked states ([DeliveryPath.BLOCKED_BOTH]
+     * / [DeliveryPath.BLOCKED_NONE]): tells the user why nothing reaches the
+     * watch. Deliberately quiet (muted DEFAULT channel) — a setup nag must
+     * never buzz like a navigation alert. Tap opens MainActivity.
+     */
+    fun postBlockedNotice(path: DeliveryPath) {
+        val text = when (path) {
+            DeliveryPath.BLOCKED_BOTH ->
+                "Both Zepp and Gadgetbridge are installed — keep only one so StarPath can start."
+            DeliveryPath.BLOCKED_NONE ->
+                "No watch app installed — install Zepp or Gadgetbridge so StarPath can start."
+            else -> return
+        }
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notif = NotificationCompat.Builder(context, SETUP_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_map)
+            .setContentTitle("StarPath blocked")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(openPendingIntent)
+            .setAutoCancel(true)
+            .setOngoing(false)
+            .setSilent(true)
+            .build()
+        manager.notify(SETUP_NOTIF_ID, notif)
+    }
+
+    fun cancelBlockedNotice() = manager.cancel(SETUP_NOTIF_ID)
 
     fun keepAliveNotification(): Notification {
         val stopIntent = Intent(context, KeepAliveService::class.java).apply {
