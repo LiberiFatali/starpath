@@ -47,23 +47,19 @@ class StarPathListener : NotificationListenerService() {
         // stale REROUTING card (state-transition bypass inside shouldForward).
         if (!NavGate.shouldForward(update, outcome.appliedIcon, lastPosted)) return
 
-        // Alert first: NavAlertManager tracks maneuver changes and 200/100/50m
-        // milestone crossings. Its NONE verdicts record no state, so
-        // evaluating speculatively here is safe.
-        val alertDecision = alertManager.evaluate(update)
-
-        // Dedup: Maps re-posts every 10–20 m with only the distance
-        // shrinking. Skip re-posts whose canonical direction + normalized
-        // street + state match the last card — unless the alert manager
-        // flagged a milestone/maneuver/rerouting worth buzzing for. In that
-        // case re-post so the title countdown (e.g. "200 m ◀◀" → "100 m ◀◀")
-        // reaches the watch with alert=true.
-        if (NavDedup.isRedundant(update, lastPosted) && !alertDecision.shouldAlert) return
+        // Strict dedup: Maps re-posts every 10–20 m with only the distance
+        // shrinking. The parsed update already splits direction (maneuver)
+        // from place (street), so skip re-posts whose canonical direction +
+        // normalized street + state match the last card — even milestones.
+        // Distance title intentionally freezes between turns to stop watch spam.
+        if (NavDedup.isRedundant(update, lastPosted)) return
 
         if (!mapsActive) {
             mapsActive = true
             KeepAliveService.start(this)
         }
+
+        val alertDecision = alertManager.evaluate(update)
 
         // Strict dedup compares full update.street (not the truncated card
         // text), so truncation can't mask a real street change. Display
