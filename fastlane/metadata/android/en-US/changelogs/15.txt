@@ -1,0 +1,4 @@
+- Release 0.15.
+- chore(fdroid): sync metadata for v0.14 [skip ci]
+- feat(runtime): add Gadgetbridge delivery path alongside Zepp
+- release: bump to v0.15
