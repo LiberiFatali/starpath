@@ -19,14 +19,12 @@ class GMapsParserTest {
             textLines = emptyList(),
         )!!
         assertEquals(NavManeuver.TURN_LEFT, u.maneuver)
-        assertEquals("200 m", u.distanceText)
-        assertEquals(200, u.distanceMeters)
         assertEquals("Nguyen Hue", u.street)
         assertEquals(NavState.ENROUTE, u.state)
     }
 
     @Test
-    fun `english turn with decimal kilometers`() {
+    fun `english turn keeps street, no next-turn distance parsed`() {
         val u = GMapsParser.parse(
             title = "Turn right after 1.2 km onto Le Loi",
             text = "Le Loi",
@@ -34,7 +32,6 @@ class GMapsParserTest {
             textLines = emptyList(),
         )!!
         assertEquals(NavManeuver.TURN_RIGHT, u.maneuver)
-        assertEquals(1200, u.distanceMeters)
         assertEquals("Le Loi", u.street)
     }
 
@@ -111,7 +108,7 @@ class GMapsParserTest {
             textLines = emptyList(),
         )!!
         assertEquals(NavManeuver.TURN_LEFT, u.maneuver)
-        assertEquals("200 m", u.distanceText)
+        assertEquals("Nguyen Hue", u.street)
     }
 
     @Test
@@ -193,8 +190,7 @@ class GMapsParserTest {
             subText = "Maps • 43 min • 15 km • 20:08 ETA",
         )!!
         assertEquals(NavManeuver.UNKNOWN, u.maneuver)
-        // Remaining-trip distance must not masquerade as turn distance.
-        assertEquals("", u.distanceText)
+        // Remaining-trip info stays on the trip line only.
         assertEquals("Maps • 43 min • 15 km • 20:08 ETA", u.tripLine)
     }
 

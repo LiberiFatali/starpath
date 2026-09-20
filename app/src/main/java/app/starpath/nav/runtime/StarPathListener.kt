@@ -42,24 +42,26 @@ class StarPathListener : NotificationListenerService() {
 
         // Navigation-phase validity gate (defense in depth behind the ongoing
         // flag): drop non-navigation content that still parses, e.g. an
-        // UNKNOWN prompt with no distance. Diagnostics are already stored.
+        // UNKNOWN prompt with no icon verdict. Diagnostics are already stored.
         // Rerouting never latches: any live ENROUTE instruction clears a
         // stale REROUTING card (state-transition bypass inside shouldForward).
         if (!NavGate.shouldForward(update, outcome.appliedIcon, lastPosted)) return
 
-        // Strict dedup: Maps re-posts every 10–20 m with only the distance
-        // shrinking. The parsed update already splits direction (maneuver)
-        // from place (street), so skip re-posts whose canonical direction +
-        // normalized street + state match the last card — even milestones.
-        // Distance title intentionally freezes between turns to stop watch spam.
-        if (NavDedup.isRedundant(update, lastPosted)) return
+        // Alert first: NavAlertManager tracks maneuver changes and the 30s
+        // stale-instruction reminder. Its NONE verdicts record no state, so
+        // evaluating speculatively here is safe.
+        val alertDecision = alertManager.evaluate(update)
+
+        // Strict dedup: Maps re-posts frequently with no new direction/place/
+        // state. Skip re-posts whose canonical direction + normalized street
+        // + state match the last card — unless the alert manager flagged a
+        // maneuver change, rerouting, or stale reminder worth buzzing for.
+        if (NavDedup.isRedundant(update, lastPosted) && !alertDecision.shouldAlert) return
 
         if (!mapsActive) {
             mapsActive = true
             KeepAliveService.start(this)
         }
-
-        val alertDecision = alertManager.evaluate(update)
 
         // Strict dedup compares full update.street (not the truncated card
         // text), so truncation can't mask a real street change. Display

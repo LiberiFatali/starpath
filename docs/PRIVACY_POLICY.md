@@ -13,7 +13,7 @@ We believe in complete transparency and minimal data footprint.
 StarPath requires specific Android permissions to function as intended. All data is processed **locally on your device in real time**:
 
 ### A. Notification Access (`NotificationListenerService`)
-* **Purpose**: StarPath observes notifications posted by Google Maps while you are actively navigating to extract the current turn maneuver, distance, and road name.
+* **Purpose**: StarPath observes notifications posted by Google Maps while you are actively navigating to extract the current turn maneuver, road name, and remaining-trip info.
 * **Scope**: StarPath strictly filters for Google Maps navigation updates. It does not read, log, or inspect notifications from any other application.
 * **Storage & Transmission**: No notification content is saved to persistent storage, uploaded to any remote server, or shared with third parties. Processing is strictly ephemeral (in-memory).
 

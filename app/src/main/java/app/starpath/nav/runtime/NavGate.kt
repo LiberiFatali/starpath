@@ -12,7 +12,8 @@ import app.starpath.nav.model.NavUpdate
  *
  * Drops the shape of non-navigation Maps pushes (e.g. the "Has it closed? /
  * Should this place be shown as closed" crowdsource prompt): ENROUTE +
- * UNKNOWN maneuver + no distance + no icon verdict.
+ * UNKNOWN maneuver + no icon verdict. Text-only UNKNOWN is never navigation —
+ * a real instruction carries either an icon verdict or a maneuver verb.
  */
 object NavGate {
 
@@ -24,14 +25,13 @@ object NavGate {
     fun shouldForward(update: NavUpdate, appliedIcon: Boolean): Boolean {
         if (update.state == NavState.REROUTING) return true
         if (appliedIcon) return true
-        if (update.maneuver != NavManeuver.UNKNOWN) return true
-        return update.distanceMeters != null
+        return update.maneuver != NavManeuver.UNKNOWN
     }
 
     /**
      * Rerouting is transient, never latched: any live ENROUTE instruction
      * with a street clears a stale REROUTING card, even when weak
-     * (UNKNOWN + no distance — the RemoteViews-only distance shape).
+     * (UNKNOWN with no icon verdict).
      * Without this the watch freezes on "… Rerouting" after Maps has
      * already recovered (field: no_text_rerouting).
      */

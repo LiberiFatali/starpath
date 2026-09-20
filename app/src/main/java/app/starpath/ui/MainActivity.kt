@@ -285,8 +285,6 @@ class MainActivity : Activity() {
             NavFormatter.toCard(
                 NavUpdate(
                     maneuver = NavManeuver.TURN_LEFT,
-                    distanceText = "200 m",
-                    distanceMeters = 200,
                     street = "Nguyen Hue",
                     tripLine = "12 min · 3.2 km left",
                     state = NavState.ENROUTE,

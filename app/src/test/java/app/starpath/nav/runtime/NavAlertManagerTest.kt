@@ -16,131 +16,92 @@ class NavAlertManagerTest {
 
     @Before
     fun setUp() {
-        alertManager = NavAlertManager(pulseIntervalMs = 18_000L)
+        alertManager = NavAlertManager(staleIntervalMs = 30_000L)
     }
+
+    private fun update(
+        maneuver: NavManeuver = NavManeuver.TURN_LEFT,
+        street: String = "Nguyen Hue",
+        tripLine: String = "9 min",
+        state: NavState = NavState.ENROUTE,
+    ) = NavUpdate(maneuver, street, tripLine, state)
 
     @Test
     fun `evaluates maneuver change as alert`() {
-        val update1 = NavUpdate(
-            maneuver = NavManeuver.STRAIGHT,
-            distanceText = "1.5 km",
-            distanceMeters = 1500,
-            street = "Main St",
-            tripLine = "10 min",
-            state = NavState.ENROUTE,
+        val d1 = alertManager.evaluate(
+            NavUpdate(NavManeuver.STRAIGHT, "Main St", "10 min", NavState.ENROUTE),
+            currentTimeMs = 1000L,
         )
-        val d1 = alertManager.evaluate(update1, currentTimeMs = 1000L)
         assertTrue(d1.shouldAlert)
         assertEquals(NavAlertManager.AlertReason.MANEUVER_CHANGED, d1.reason)
 
         // Maneuver changes to Turn Left
-        val update2 = NavUpdate(
-            maneuver = NavManeuver.TURN_LEFT,
-            distanceText = "600 m",
-            distanceMeters = 600,
-            street = "Nguyen Hue",
-            tripLine = "9 min",
-            state = NavState.ENROUTE,
+        val d2 = alertManager.evaluate(
+            NavUpdate(NavManeuver.TURN_LEFT, "Nguyen Hue", "9 min", NavState.ENROUTE),
+            currentTimeMs = 2000L,
         )
-        val d2 = alertManager.evaluate(update2, currentTimeMs = 2000L)
         assertTrue(d2.shouldAlert)
         assertEquals(NavAlertManager.AlertReason.MANEUVER_CHANGED, d2.reason)
     }
 
     @Test
-    fun `milestone thresholds trigger alerts`() {
-        // Initial setup for TURN_LEFT at 600m (above 500m milestone)
-        alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "600 m", 600, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 1000L,
-        )
+    fun `unchanged instruction stays silent inside stale window`() {
+        alertManager.evaluate(update(), currentTimeMs = 1000L)
 
-        // Cross 500m milestone
-        val d500 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "500 m", 500, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 5000L,
-        )
-        assertTrue(d500.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.MILESTONE_CROSSED, d500.reason)
-
-        // Minor change to 400m (no new milestone crossed, inside 18s window) -> silent
-        val d400 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "400 m", 400, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 10000L,
-        )
-        assertFalse(d400.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.NONE, d400.reason)
-
-        // Cross 200m milestone -> alert
-        val d200 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 15000L,
-        )
-        assertTrue(d200.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.MILESTONE_CROSSED, d200.reason)
-
-        // Cross 100m milestone -> alert
-        val d100 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "100 m", 100, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 20000L,
-        )
-        assertTrue(d100.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.MILESTONE_CROSSED, d100.reason)
-
-        // Cross 50m milestone -> alert
-        val d50 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "50 m", 50, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 25000L,
-        )
-        assertTrue(d50.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.MILESTONE_CROSSED, d50.reason)
-    }
-
-    @Test
-    fun `stay awake pulse triggers when waiting near turn`() {
-        // First alert at 200m
-        alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 1000L,
-        )
-
-        // 10 seconds later: screen might still be on or off, within 18s -> no pulse
-        val d1 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 11000L,
-        )
-        assertFalse(d1.shouldAlert)
-
-        // 19 seconds after last alert (1000 + 19000 = 20000) -> pulse triggers to re-wake watch
-        val d2 = alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "180 m", 180, "Nguyen Hue", "", NavState.ENROUTE),
-            currentTimeMs = 20000L,
-        )
-        assertTrue(d2.shouldAlert)
-        assertEquals(NavAlertManager.AlertReason.STAY_AWAKE_PULSE, d2.reason)
-    }
-
-    @Test
-    fun `straight cruising does not spam alerts`() {
-        // Initial straight
-        alertManager.evaluate(
-            NavUpdate(NavManeuver.STRAIGHT, "2 km", 2000, "Highway", "", NavState.ENROUTE),
-            currentTimeMs = 1000L,
-        )
-
-        // Passing 500m while going straight does not trigger milestone alert
-        val d = alertManager.evaluate(
-            NavUpdate(NavManeuver.STRAIGHT, "500 m", 500, "Highway", "", NavState.ENROUTE),
-            currentTimeMs = 30000L,
-        )
+        // Identical re-post 10s later: silent.
+        val d = alertManager.evaluate(update(), currentTimeMs = 11_000L)
         assertFalse(d.shouldAlert)
         assertEquals(NavAlertManager.AlertReason.NONE, d.reason)
     }
 
     @Test
+    fun `stale reminder fires after 30s without change`() {
+        alertManager.evaluate(update(), currentTimeMs = 1000L)
+
+        val d = alertManager.evaluate(update(), currentTimeMs = 31_000L)
+        assertTrue(d.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.STALE_REMINDER, d.reason)
+    }
+
+    @Test
+    fun `stale reminder repeats every 30s`() {
+        alertManager.evaluate(update(), currentTimeMs = 1000L)
+
+        // First reminder at +30s resets the clock...
+        val d1 = alertManager.evaluate(update(), currentTimeMs = 31_000L)
+        assertTrue(d1.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.STALE_REMINDER, d1.reason)
+
+        // ...so 10s after the reminder is silent again...
+        val d2 = alertManager.evaluate(update(), currentTimeMs = 41_000L)
+        assertFalse(d2.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.NONE, d2.reason)
+
+        // ...and the next reminder fires 30s after the previous one.
+        val d3 = alertManager.evaluate(update(), currentTimeMs = 61_000L)
+        assertTrue(d3.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.STALE_REMINDER, d3.reason)
+    }
+
+    @Test
+    fun `stale reminder applies while cruising straight`() {
+        alertManager.evaluate(
+            update(maneuver = NavManeuver.STRAIGHT, street = "Highway"),
+            currentTimeMs = 1000L,
+        )
+
+        val d = alertManager.evaluate(
+            update(maneuver = NavManeuver.STRAIGHT, street = "Highway"),
+            currentTimeMs = 31_000L,
+        )
+        assertTrue(d.shouldAlert)
+        assertEquals(NavAlertManager.AlertReason.STALE_REMINDER, d.reason)
+    }
+
+    @Test
     fun `rerouting always triggers alert`() {
         val d = alertManager.evaluate(
-            NavUpdate(NavManeuver.UNKNOWN, "", null, "Rerouting...", "", NavState.REROUTING),
+            NavUpdate(NavManeuver.UNKNOWN, "Rerouting...", "", NavState.REROUTING),
             currentTimeMs = 1000L,
         )
         assertTrue(d.shouldAlert)
@@ -150,12 +111,12 @@ class NavAlertManagerTest {
     @Test
     fun `left variants share one display mark and do not re-alert`() {
         alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "600 m", 600, "Nguyen Hue", "", NavState.ENROUTE),
+            update(maneuver = NavManeuver.TURN_LEFT),
             currentTimeMs = 1000L,
         )
-        // Same canonical left, same distance: silent (no maneuver change).
+        // Same canonical left: silent (no maneuver change, inside stale window).
         val d = alertManager.evaluate(
-            NavUpdate(NavManeuver.SLIGHT_LEFT, "600 m", 600, "Nguyen Hue", "", NavState.ENROUTE),
+            update(maneuver = NavManeuver.SLIGHT_LEFT),
             currentTimeMs = 2000L,
         )
         assertFalse(d.shouldAlert)
@@ -164,13 +125,9 @@ class NavAlertManagerTest {
 
     @Test
     fun `reset clears tracking state`() {
-        alertManager.evaluate(
-            NavUpdate(NavManeuver.TURN_LEFT, "200 m", 200, "Street", "", NavState.ENROUTE),
-            currentTimeMs = 1000L,
-        )
+        alertManager.evaluate(update(), currentTimeMs = 1000L)
         alertManager.reset()
         assertEquals(null, alertManager.lastAlertedManeuver)
-        assertEquals(null, alertManager.lastMilestone)
         assertEquals(0L, alertManager.lastAlertTimeMs)
     }
 }

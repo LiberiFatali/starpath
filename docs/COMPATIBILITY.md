@@ -30,9 +30,9 @@ The watch shows 3 essential directions:
 - If arrows show as boxes on your watch, enable **ASCII arrows** in
   StarPath: `<-` / `->` / `^` / `DEST` / `?`.
 
-Small or square screens may wrap the street/trip lines; the title
-(direction + distance) always fits. The trip line is tagged `DEST`
-(e.g. `DEST 450 m · 6 min`) so the two distances never blur; the final
+Small or square screens may wrap the street/trip lines; the mark-only title
+(direction mark) always fits. The trip line is tagged `DEST`
+(e.g. `DEST 450 m · 6 min`) with the remaining-trip distance; the final
 arrival card shows bare `DEST` with no trip line.
 
 ## Out of scope / untested

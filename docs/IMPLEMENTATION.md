@@ -20,13 +20,14 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 │                                        ▼               │
 │                            ┌───────────────────────┐   │
 │                            │      GMapsParser      │   │
-│                            │  (Maneuver & Distance)│   │
+│                            │   (Maneuver & Street) │   │
 │                            └───────────┬───────────┘   │
 │                                        │               │
 │                                        ▼               │
 │                            ┌───────────────────────┐   │
 │                            │    NavAlertManager    │   │
-│                            │  (Milestones & Pulse) │   │
+│                            │ (Change & 30s stale   │   │
+│                            │  reminder)            │   │
 │                            └───────────┬───────────┘   │
 │                                        │               │
 │                                        ▼               │
@@ -56,7 +57,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **File:** `app/src/main/java/app/starpath/nav/runtime/StarPathListener.kt`
 * **Role:** Extends Android's `NotificationListenerService`.
 * **Behavior:**
-  - Filters strictly for notifications originating from `com.google.android.apps.maps` with `FLAG_ONGOING_EVENT` (navigation phase only — transient Maps pushes are dropped before parsing). Parsed updates additionally pass the `NavGate` validity check (rerouting, known maneuver, icon verdict, or distance); non-navigation content such as crowdsource prompts never reaches the phone card or watch.
+  - Filters strictly for notifications originating from `com.google.android.apps.maps` with `FLAG_ONGOING_EVENT` (navigation phase only — transient Maps pushes are dropped before parsing). Parsed updates additionally pass the `NavGate` validity check (rerouting, known maneuver, or icon verdict); non-navigation content such as crowdsource prompts never reaches the phone card or watch.
   - Extracts the raw notification extras (`EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_TEXT_LINES`).
   - Automatically spins up `KeepAliveService` when an active navigation session starts.
   - Automatically cancels StarPath cards and tears down `KeepAliveService` when Google Maps navigation ends or is dismissed.
@@ -67,18 +68,17 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **Capabilities:**
   - **Maneuver Detection:** Identifies turns (left, right, slight, sharp), U-turns, and arrivals. Roundabout/exit instructions carry no side for the watch and parse as `UNKNOWN` (`?`).
   - **Bilingual Parsing:** Supports English (`Turn left`, `In 200 m`, `Head north`) and Vietnamese (`Rẽ trái`, `Đi về hướng`, `Nhập vào`).
-  - **Distance Extraction:** Parses meters, kilometers, feet, and miles, standardizing them into an integer `distanceMeters` for milestone calculations.
+  - **No Next-Turn Distance:** Next-turn distance is deliberately not parsed — it cannot be extracted reliably from the Maps notification, so nothing depends on it. Only the trip line's *remaining* distance is read (display-only, plus the far-from-arrival `DEST` plausibility guard).
   - **Status States:** Identifies rerouting states, searching for GPS, and final arrival.
 
 ### `NavAlertManager`
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavAlertManager.kt`
 * **Role:** Decides whether an incoming update should trigger an alert (vibrate & wake the watch display) or remain silent.
-* **Logic:**
+* **Logic (no distance — next-turn distance is unparseable):**
   1. **Maneuver Change:** Always triggers an alert when the requested action changes (e.g. `STRAIGHT` -> `TURN_LEFT`).
-  2. **Milestone Crossed:** Triggers an alert when approaching a turn and crossing key distance thresholds:
-     - `500 m` → `200 m` → `100 m` → `50 m`
-  3. **Stay-Awake Pulse:** If within `300 m` of an active turn and the watch screen has likely turned off (elapsed time ≥ 18s), sends a gentle alert pulse to refresh the card on the watch screen.
-  4. **Cruising Straight:** Suppresses milestone alerts while maintaining a long straight path to prevent unnecessary vibrations and battery drain.
+  2. **Rerouting:** Always triggers an alert on route recalculation.
+  3. **Stale Reminder:** Triggers an alert when the same instruction (canonical direction + street + state) is unchanged for 30s, repeating every 30s until it changes — the reminder of the upcoming turn while approaching it. Applies to all maneuvers, including straight cruising.
+* **Pipeline order:** `StarPathListener` evaluates the alert manager *before* the `NavDedup` check, so a stale reminder re-posts even though the instruction is dedup-identical; identical re-posts inside the 30s window stay silent.
 
 ### `NavNotifier`
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavNotifier.kt`
@@ -112,14 +112,14 @@ StarPath does not require a custom mini-program installed on the watch for v1. I
 
 1. StarPath posts an Android notification on the phone with `PRIORITY_HIGH` and `CATEGORY_NAVIGATION`.
 2. The **Zepp App** detects the notification via its own notification reader and transmits the notification **text** (title, body) over Bluetooth Low Energy (BLE) to the paired watch (e.g. Amazfit Active 2). **Images (`largeIcon`, bitmaps) are NOT forwarded** — verified Sep 2026: image forwarding on Amazfit is a 2026 iOS-only beta limited to newer watches (Cheetah 2 Ultra / Balance Ultra / Balance 3…), Amazfit Active 2 not included.
-3. The watch vibrates and turns on its screen, presenting the glance card (`260 m ▶▶ / street / DEST 450 m · 6 min`).
+3. The watch vibrates and turns on its screen, presenting the glance card (`▶▶ / street / DEST 450 m · 6 min`).
 
 See `docs/COMPATIBILITY.md` for the supported-device model (any Zepp-App-paired watch with notification mirroring; tested on Amazfit Active 2).
 
 ### Watch Display Lifespan
 Smartwatches typically shut off their screen after 5 to 10 seconds to conserve battery:
 * **Recommended Watch Setting:** In watch **Settings** → **Display** → **Screen-on Duration** (or **Auto Screen Off**), set to **15s – 30s**.
-* **Automated Wakeup:** StarPath's `NavAlertManager` milestone events and 18s approach pulse ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
+* **Automated Wakeup:** StarPath's `NavAlertManager` maneuver-change alerts and 30s stale-instruction reminders ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
 
 ---
 
@@ -131,7 +131,7 @@ If Google updates the Google Maps notification format in your region or language
 
 Open StarPath → **Last Maps notification** → **Copy/Share debug info**. It shows,
 for the most recent Maps post: winning source (`EXTRAS` vs `NONE`), parsed
-maneuver/distance/street/trip, all captured text fields, the icon-classifier
+maneuver/street/trip, all captured text fields, the icon-classifier
 verdict + score, mask + per-direction scores, and any error. Paste it into the bug report.
 
 With USB debugging, alternatively:
@@ -221,8 +221,9 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
     renders as `DEST`; U-turn and roundabout/exit text render as `?`
     (U-turn text is still detected by the parser
     — Maps does send it, rarely, text-only — but the notification carries no
-    side, so the display stays `?`). Strict dedup re-posts only on
-    direction/place/state change, so 10–20 m countdown ticks are skipped.
+    side, so the display stays `?`). Strict dedup skips re-posts with no
+    direction/place/state change; the alert manager still re-posts on
+    maneuver change, rerouting, or the 30s stale-instruction reminder.
 
 **Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
 `▲▲` via icon (text yields `?`); icon-only `40 m` + street + left-hook → `◀◀` via moments;

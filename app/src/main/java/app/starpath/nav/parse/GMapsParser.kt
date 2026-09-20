@@ -26,9 +26,9 @@ object GMapsParser {
 
     const val MAPS_PACKAGE = "com.google.android.apps.maps"
 
-    private val distanceFirst = Regex(
-        """(?i)(?:in|after)\s+([\d.,]+)\s*(km|m|mi|ft|yd)\b"""
-    )
+    // Trip-remaining distance only (e.g. "3.5 km" in "13 min · 3.5 km · ETA").
+    // Next-turn distance is deliberately NOT parsed: it cannot be extracted
+    // reliably from the Maps notification, so nothing may depend on it.
     // Guard against speed ("60 km/h"): unit must not be followed by "/h".
     private val distanceAny = Regex("""([\d.,]+)\s*(km|m|mi|ft|yd)\b(?!/h)""")
 
@@ -53,8 +53,6 @@ object GMapsParser {
         if (rerouteLine != null) {
             return NavUpdate(
                 maneuver = NavManeuver.UNKNOWN,
-                distanceText = "",
-                distanceMeters = null,
                 street = rerouteLine,
                 tripLine = "",
                 state = NavState.REROUTING,
@@ -66,21 +64,15 @@ object GMapsParser {
         val trip = lines.drop(2).firstOrNull { looksLikeTripLine(it) }.orEmpty()
             .ifBlank {
                 // The "Maps • 44 min • 21 km • 20:02 ETA" header line: useful
-                // as trip info, but never as maneuver/distance (it carries
-                // *remaining* distance, not next-turn distance).
+                // as trip info, but never as maneuver (it carries *remaining*
+                // distance, not next-turn distance).
                 subText?.takeIf { it.isNotBlank() && looksLikeTripLine(it) }.orEmpty()
             }
-        val (distanceText, distanceMeters) = extractDistance(head)
-            ?: extractDistance(body)
-            ?: lines.drop(2).firstNotNullOfOrNull { extractDistance(it) }
-            ?: ("" to null)
 
         return NavUpdate(
             // Scan every line in priority order: the maneuver verb may live
             // in title while bigText holds the trip summary, or vice versa.
             maneuver = detectManeuver(lines),
-            distanceText = distanceText,
-            distanceMeters = distanceMeters,
             street = extractStreet(head, body),
             tripLine = trip.ifBlank { body.takeIf { it != head }.orEmpty() },
             state = NavState.ENROUTE,
@@ -97,21 +89,6 @@ object GMapsParser {
         val t = s.lowercase()
         return "min" in t || "hr" in t ||
             "eta" in t || "·" in s || "km left" in t
-    }
-
-    private fun extractDistance(s: String): Pair<String, Int?>? {
-        val m = distanceFirst.find(s) ?: distanceAny.find(s) ?: return null
-        val raw = m.groupValues[1].replace(',', '.')
-        val unit = m.groupValues[2].lowercase()
-        val value = raw.toDoubleOrNull() ?: return m.value to null
-        val meters = when (unit) {
-            "km" -> (value * 1000).toInt()
-            "mi" -> (value * 1609).toInt()
-            "ft" -> (value * 0.3048).toInt()
-            "yd" -> (value * 0.9144).toInt()
-            else -> value.toInt()
-        }
-        return "$raw $unit" to meters
     }
 
     /** Trip remaining beyond this makes a DESTINATION icon verdict implausible. */

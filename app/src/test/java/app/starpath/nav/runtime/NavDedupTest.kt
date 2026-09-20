@@ -15,10 +15,8 @@ class NavDedupTest {
         maneuver: NavManeuver = NavManeuver.TURN_LEFT,
         street: String = "Nguyen Hue",
         state: NavState = NavState.ENROUTE,
-        distanceText: String = "200 m",
-        distanceMeters: Int? = 200,
         tripLine: String = "9 min",
-    ) = NavUpdate(maneuver, distanceText, distanceMeters, street, tripLine, state)
+    ) = NavUpdate(maneuver, street, tripLine, state)
 
     @Test
     fun `first post is never redundant`() {
@@ -26,9 +24,9 @@ class NavDedupTest {
     }
 
     @Test
-    fun `countdown tick with same direction and street is redundant`() {
-        val last = update(distanceText = "200 m", distanceMeters = 200, tripLine = "9 min")
-        val tick = update(distanceText = "180 m", distanceMeters = 180, tripLine = "8 min")
+    fun `re-post with same direction and street is redundant`() {
+        val last = update(tripLine = "9 min")
+        val tick = update(tripLine = "8 min")
         assertTrue(NavDedup.isRedundant(tick, last))
     }
 
@@ -65,8 +63,8 @@ class NavDedupTest {
 
     @Test
     fun `both pin mirrors share one dest key`() {
-        val left = update(maneuver = NavManeuver.DESTINATION, street = "CT5-ĐN4", distanceText = "", distanceMeters = null)
-        val right = update(maneuver = NavManeuver.DESTINATION, street = "CT5-ĐN4  / Tòa nhà", distanceText = "", distanceMeters = null)
+        val left = update(maneuver = NavManeuver.DESTINATION, street = "CT5-ĐN4")
+        val right = update(maneuver = NavManeuver.DESTINATION, street = "CT5-ĐN4  / Tòa nhà")
         // Same venue head via normalization is out of scope; identical streets dedup.
         assertTrue(NavDedup.isRedundant(left, left.copy()))
         assertFalse(NavDedup.isRedundant(right, left))

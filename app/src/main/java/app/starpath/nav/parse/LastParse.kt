@@ -24,7 +24,6 @@ object LastParse {
                 appendLine("update=null")
             } else {
                 appendLine("maneuver=${u.maneuver} state=${u.state}")
-                appendLine("distance='${u.distanceText}' meters=${u.distanceMeters}")
                 appendLine("street='${u.street}'")
                 appendLine("trip='${u.tripLine}'")
             }

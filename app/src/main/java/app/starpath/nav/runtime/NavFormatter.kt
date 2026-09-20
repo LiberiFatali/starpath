@@ -12,8 +12,9 @@ import app.starpath.nav.model.NavUpdate
  * ASCII mode). Parser detail (slight/sharp/keep/U-turn)
  * collapses here via [NavManeuver.canonical] — never a fake arrow.
  *
- * Title leads with the next-turn countdown, arrow last: `260 m ▶▶`.
- * Sub carries the destination remaining trip, prefixed so the two distances
+ * Title is the maneuver mark only (`◀◀ / ▶▶ / ▲▲ / DEST / ?`): next-turn
+ * distance cannot be extracted reliably, so no countdown is shown.
+ * Sub carries the destination remaining trip, prefixed so the two lines
  * never blur: `DEST 450 m · 6 min` (ETA clock dropped) — never the raw Maps
  * header verbatim. The final arrival card (title `DEST`) and rerouting carry
  * no prefix.
@@ -30,16 +31,10 @@ object NavFormatter {
      */
     const val DEST_PREFIX = "DEST "
 
-    /** e.g. "200 m ◀◀" / "1.2 km ▲▲" / "DEST" / "200 m ?" (ASCII: "200 m <-").
-     * Arrival is mark-only: near arrival Maps reuses the remaining-trip
-     * distance in the street line, so "$dist DEST" would echo line 2/3. */
+    /** Maneuver mark only: "◀◀" / "▶▶" / "▲▲" / "DEST" / "?" (ASCII: "<-" / "->" / "^" / "DEST" / "?"). */
     fun title(update: NavUpdate, useAscii: Boolean = false): String {
         if (update.state == NavState.REROUTING) return "… Rerouting"
-        val mark = update.maneuver.displayMark(useAscii)
-        if (update.maneuver == NavManeuver.DESTINATION) return mark
-        val dist = update.distanceText.trim()
-        return if (dist.isBlank()) mark
-        else "$dist $mark"
+        return update.maneuver.displayMark(useAscii)
     }
 
     /** Street only, max ~24 chars so it never scrolls while riding. */
