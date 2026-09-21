@@ -1,0 +1,6 @@
+- Release 0.17.
+- chore(fdroid): sync metadata for v0.16 [skip ci]
+- docs(readme): Mention Gadgetbridge support alongside Zepp
+- docs(blog): remove outdated blog post
+- refactor(nav): remove Gadgetbridge PebbleKit sender and use standard notification mirroring
+- release: bump to v0.17

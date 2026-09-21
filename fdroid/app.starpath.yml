@@ -76,9 +76,16 @@ Builds:
     gradle:
       - yes
 
+  - versionName: '0.17'
+    versionCode: 17
+    commit: 9362526bee0daafe2eea369e90b02c9813ee54d9
+    subdir: app
+    gradle:
+      - yes
+
 AllowedAPKSigningKeys: bca0b3fe8815b98a45f61c10b17bf5851e9a866cc5e145f11323d2572aa11f83
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: '0.16'
-CurrentVersionCode: 16
+CurrentVersion: '0.17'
+CurrentVersionCode: 17
