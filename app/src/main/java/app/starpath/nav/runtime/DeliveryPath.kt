@@ -36,6 +36,16 @@ object DeliveryPaths {
     const val ZEPP_PACKAGE = "com.huami.watch.hmwatchmanager"
     const val GADGETBRIDGE_PACKAGE = "nodomain.freeyourgadget.gadgetbridge"
     const val PREF_DELIVERY_PATH = "delivery_path"
+    const val PREF_PEBBLE_ALWAYS_CONFIRMED = "pebble_always_confirmed"
+
+    /**
+     * Whether the 1-tap setup must prompt for Gadgetbridge's Pebble Messages
+     * setting. Gadgetbridge drops our PebbleKit cards unless it is Always,
+     * and its prefs are private to its own UID — so StarPath cannot probe
+     * the value and relies on this manual confirmation instead.
+     */
+    fun shouldPromptPebble(path: DeliveryPath, pebbleConfirmed: Boolean): Boolean =
+        path == DeliveryPath.GADGETBRIDGE && !pebbleConfirmed
 
     /**
      * Pure resolution over an install-probe, so the full matrix is JVM-tested.

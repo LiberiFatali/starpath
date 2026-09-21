@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import app.starpath.ui.MainActivity
-
 /**
  * Re-posts the parsed navigation state as StarPath's own notification.
  * This is the card Zepp App Alerts forwards over BLE to the watch.
@@ -22,12 +21,29 @@ class NavNotifier(private val context: Context) {
         const val KEEPALIVE_ID = 1002
         const val SETUP_CHANNEL_ID = "starpath_setup"
         const val SETUP_NOTIF_ID = 1003
+        const val PREF_CHANNEL_VERSION = "notif_channel_version"
+
+        /**
+         * Bump when any channel config below changes: existing installs get
+         * exactly one delete + re-create (channels are immutable otherwise).
+         */
+        const val CHANNEL_VERSION = 1
+
+        /** Pure gate for [NavNotifier.ensureChannels] (JVM-tested). */
+        fun shouldRebuildChannels(storedVersion: Int): Boolean = storedVersion != CHANNEL_VERSION
     }
 
     private val manager: NotificationManager =
         context.getSystemService(NotificationManager::class.java)
 
     fun ensureChannels() {
+        // Channels persist after first creation, but a cold foreground-service
+        // start (KeepAliveService.onCreate) pays every millisecond of this
+        // method against the ~5s FGS timeout (RemoteServiceException history,
+        // Sep 2026). So rebuild only when the config version changes; the
+        // steady state is a single prefs read.
+        val prefs = context.getSharedPreferences(NavFormatter.PREFS_FILE, Context.MODE_PRIVATE)
+        if (!shouldRebuildChannels(prefs.getInt(PREF_CHANNEL_VERSION, 0))) return
         // Channels are immutable after first install: delete + re-create so
         // existing installs pick up the muted config below. Same ID keeps
         // Zepp's per-app selection intact.
@@ -61,6 +77,7 @@ class NavNotifier(private val context: Context) {
                 setSound(null, null)
             }
         )
+        prefs.edit().putInt(PREF_CHANNEL_VERSION, CHANNEL_VERSION).apply()
     }
 
     /**
