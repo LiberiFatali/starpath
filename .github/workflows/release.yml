@@ -5,7 +5,7 @@ name: Release
 # builds + publishes. Direct `git tag` pushes are inert: no workflow listens
 # to them.
 #
-# Version scheme: versionName 0.MINOR, versionCode MINOR (e.g. v0.7 -> 0.7/7).
+# Version scheme: versionName 0.MINOR (e.g. v0.13).
 #
 # Usage: Actions → Release → Run workflow (branch: main).
 # Leave `version` empty to auto-bump minor from the latest tag.
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g. 0.7). Empty auto-bumps minor from the latest tag.'
+        description: 'Version to release (e.g. 0.13). Empty auto-bumps minor from the latest tag.'
         required: false
         default: ''
 
@@ -77,7 +77,7 @@ jobs:
           fi
           VERSION="${RAW#v}"
           if ! echo "$VERSION" | grep -Eq '^0\.[0-9]+$'; then
-            echo "::error::Unsupported version '$RAW'. Expected like 0.7 (versionName 0.MINOR, versionCode MINOR)."
+            echo "::error::Unsupported version '$RAW'. Expected like 0.13 (versionName 0.MINOR)."
             exit 1
           fi
           TAG="v$VERSION"
@@ -145,7 +145,7 @@ jobs:
           VERSION="${{ needs.bump-and-tag.outputs.version }}"
           TAG="${{ needs.bump-and-tag.outputs.tag }}"
           if ! echo "$VERSION" | grep -Eq '^0\.[0-9]+$'; then
-            echo "::error::Unsupported version '$VERSION'. Expected like 0.7."
+            echo "::error::Unsupported version '$VERSION'. Expected like 0.13."
             exit 1
           fi
           MINOR="${VERSION#0.}"
