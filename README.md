@@ -1,10 +1,10 @@
-# ★ StarPath - Google Maps turn-by-turn for Amazfit watches and Zepp devices
+# ★ StarPath - Google Maps turn-by-turn for Amazfit watches and Zepp/Gadgetbridge devices
 
 **Why:** Most Amazfit watches and Zepp-paired devices have no Google Maps turn-by-turn support. StarPath puts it on your wrist, so your phone stays in your pocket (tested on Amazfit Active 2 — see Compatibility).
 
 <img src="docs/assets/arrow/3_maps_starpath_turn_right.jpg" alt="Glanceable Card" width="360" />
 
-**How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`▶▶ / Nguyen Hue / DEST 450 m · 6 min`) that the Zepp app mirrors to your watch over Bluetooth. See `docs/COMPATIBILITY.md` for the display model (mark + street + remaining-trip line; no next-turn distance).
+**How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`▶▶ / Nguyen Hue / DEST 450 m · 6 min`) that the Zepp/Gadgetbridge app mirrors to your watch over Bluetooth. See `docs/COMPATIBILITY.md` for the display model (mark + street + remaining-trip line; no next-turn distance).
 
 ---
 
@@ -28,7 +28,7 @@
 
 **Tested:** Amazfit Active 2 (Round) + Android phone — full turn/vibrate/wake verified.
 
-**Expected to work:** any watch paired via the Zepp App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families).
+**Expected to work:** any watch paired via the Zepp/Gadgetbridge App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families).
 
 The watch shows 5 marks (`◀◀` / `▶▶` / `▲▲` / `DEST` / `?` — see `docs/COMPATIBILITY.md` for the display model); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `DEST` / `?`).
 
