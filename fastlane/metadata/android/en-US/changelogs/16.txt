@@ -1,0 +1,6 @@
+- Release 0.16.
+- chore(fdroid): sync metadata for v0.15 [skip ci]
+- feat(ui): add setup prompt for Gadgetbridge Pebble Messages
+- docs: update documentation and project guidelines
+- chore(release): update version scheme examples
+- release: bump to v0.16
