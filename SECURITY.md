@@ -6,7 +6,7 @@ We actively support and patch the following versions of this project:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.15     | :white_check_mark: |
+| 0.16     | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
