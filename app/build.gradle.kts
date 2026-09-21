@@ -5,8 +5,8 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val appVersionCode = 16
-val appVersionName = "0.16"
+val appVersionCode = 17
+val appVersionName = "0.17"
 
 val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = Properties().apply {
@@ -37,8 +37,8 @@ android {
         applicationId = "app.starpath"
         minSdk = 29
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.16"
+        versionCode = 17
+        versionName = "0.17"
     }
 
     buildFeatures {
