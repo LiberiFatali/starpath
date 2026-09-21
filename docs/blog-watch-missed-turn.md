@@ -1,9 +1,9 @@
 ---
 title: The Watch Missed the Turn
-tags: android, computervison, navigation
+tags: android, computervision, navigation
 ---
 
-[StarPath](https://github.com/LiberiFatali/starpath) puts Google Maps turns on the [Amazfit Active 2](https://us.amazfit.com/products/active-2-round). It reposts navigation as big text cards like `◀◀ 40 m`. The Zepp app mirrors that text to the watch. The watch shows text only. Images never arrive.
+[StarPath](https://github.com/LiberiFatali/starpath) puts Google Maps turns on the [Amazfit Active 2](https://us.amazfit.com/products/active-2-round). It reposts navigation as big text cards like `▶▶ / Nguyen Hue / DEST 450 m · 6 min` (mark + street + remaining-trip line — next-turn distance is deliberately not parsed). The Zepp app mirrors that text to the watch. The watch shows text only. Images never arrive.
 
 In the first version of StarPath, my watch missed all turns. My phone showed a clear left arrow. My wrist showed nothing.
 
@@ -13,7 +13,7 @@ Every pipeline has a narrow hop. Mine sits between phone and watch: text passes,
 
 I built for the wide end first. I rendered sharp arrows for the phone shade and assumed the watch would show them. It never did. Only title and body travel over Bluetooth.
 
-The fix started when I stopped asking what I sent and asked what actually survived. The answer was plain text, a street name, and a distance. Everything else had to become text before the hop, or it vanished.
+The fix started when I stopped asking what I sent and asked what actually survived. The answer was plain text, a street name, and the remaining-trip distance. Everything else had to become text before the hop, or it vanished.
 
 ## Treat missing data as missing
 
@@ -21,7 +21,7 @@ Maps often posts icon-only directions: a distance plus a street name, no verb. N
 
 A parser sees nothing to parse. That is not failure. That is absence.
 
-I first treated these cards as errors. Then I routed them to a second signal. Text decides when it knows. Pixels decide only when text runs dry. Each source owns its strength, and neither begs the other for help.
+I first treated these cards as errors. Then I routed them to a second signal. A confident icon verdict wins over text; text is the fallback for icon-missing/low-confidence frames (canonical order in `IMPLEMENTATION.md §5`). Each source owns its strength, and neither begs the other for help.
 
 Name the absence. Then pick the next-best evidence.
 
@@ -61,8 +61,8 @@ Thickness cancels out. Dashes cancel out. Shift cancels out. The subtraction kee
 
 The order matters more than any single check:
 
-1. Trust words first. They name U-turns best.
-2. Trust pixels second, and only when words stay silent.
+1. Trust pixels first when confident — they are language-free and immune to ambiguous phrasing like bare `toward X`.
+2. Trust words second, as fallback for icon-missing/low-confidence frames. They name U-turns best.
 3. Show `?` when both stay silent.
 
 That last step took discipline. A straight arrow feels helpful. It also sends riders through intersections when the classifier guesses wrong. Short fragments, lone heads without shafts, and blank icons all earn a question mark. A question mark tells the truth: glance at your phone.
@@ -71,7 +71,7 @@ A confident wrong answer costs more than an honest gap.
 
 ## What I kept
 
-The watch still shows four glyphs: `◀◀` go left, `▶▶` go right, `▲▲` go on, `?` look up. Icon-only turns now resolve instead of shrugging. Unknowns still shrug instead of lying.
+The watch still shows five marks: `◀◀` go left, `▶▶` go right, `▲▲` go on, `DEST` destination, `?` look up (see `COMPATIBILITY.md` for the display model). Icon-only turns now resolve instead of shrugging. Unknowns still shrug instead of lying.
 
 The broader lessons travel well beyond watches: find the narrowest channel, name missing data, pick stable signals, match invariants, order your evidence, and prefer doubt over false confidence.
 

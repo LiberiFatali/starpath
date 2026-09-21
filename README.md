@@ -4,7 +4,7 @@
 
 <img src="docs/assets/arrow/3_maps_starpath_turn_right.jpg" alt="Glanceable Card" width="360" />
 
-**How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`◀◀ 200 m / Nguyen Hue`) that the Zepp app mirrors to your watch over Bluetooth.
+**How:** StarPath reads Google Maps navigation notifications and re-posts them as high-contrast cards (`▶▶ / Nguyen Hue / DEST 450 m · 6 min`) that the Zepp app mirrors to your watch over Bluetooth. See `docs/COMPATIBILITY.md` for the display model (mark + street + remaining-trip line; no next-turn distance).
 
 ---
 
@@ -15,7 +15,7 @@
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
 3. **Enable in Zepp App or Gadgetbridge (keep only one)**:
-    In the Zepp App, open your paired watch and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet). Prefer Gadgetbridge? Pair the watch there instead and set Pebble Messages to **Always**. Keeping both installed blocks StarPath.
+    In the Zepp App, open your paired watch and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet). Prefer Gadgetbridge? Pair the watch there instead and set Pebble Messages to **Always**. See `docs/COMPATIBILITY.md` for the one-app rule — both installed, or neither, blocks delivery.
 4. **Ride with Google Maps**:
    Start navigation in Google Maps. StarPath starts automatically in the background, delivers live turn updates and vibration pulses before intersections, and shuts itself down when you arrive.
 
@@ -30,7 +30,7 @@
 
 **Expected to work:** any watch paired via the Zepp App with notification/alert mirroring (Active, Balance, Bip, T-Rex, Cheetah, Falcon, GTR/GTS families).
 
-The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` otherwise); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `?`).
+The watch shows 5 marks (`◀◀` / `▶▶` / `▲▲` / `DEST` / `?` — see `docs/COMPATIBILITY.md` for the display model); if arrows show as boxes, enable **ASCII arrows** in StarPath (`<-` / `->` / `^` / `DEST` / `?`).
 
 ---
 
@@ -38,7 +38,7 @@ The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` othe
 
 ### Prerequisites
 - JDK 17+
-- Android SDK with platform `android-36` (`export ANDROID_HOME=~/Android/Sdk` or configure `local.properties`)
+- Android SDK with platform `android-36` (Android 16) + build-tools `36.0.0` (`export ANDROID_HOME=~/Android/Sdk` or configure `local.properties`)
 
 ### Commands
 
@@ -46,7 +46,7 @@ The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` othe
 # Build debug APK
 ./gradlew :app:assembleDebug
 
-# Build signed release APK
+# Build signed release APK (needs release signing; CI-only — see AGENTS.md)
 ./gradlew :app:assembleRelease
 
 # Run unit tests
@@ -54,7 +54,8 @@ The watch shows 3 essential directions (`◀◀` / `▶▶` / `▲▲`, `?` othe
 ```
 
 Output artifacts:
-- Release APK: `app/build/outputs/apk/versioned/starpath-v*.apk`
+- Local debug build: `app/build/outputs/apk/debug/app-debug.apk` (the `versioned/starpath-v*.apk` copy only happens on CI — see `app/build.gradle.kts`).
+- CI release build: `app/build/outputs/apk/versioned/starpath-v*.apk`.
 
 ---
 

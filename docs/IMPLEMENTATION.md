@@ -67,7 +67,7 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **Role:** Pure functional parser that translates Google Maps notification text into structured `NavUpdate` objects.
 * **Capabilities:**
   - **Maneuver Detection:** Identifies turns (left, right, slight, sharp), U-turns, and arrivals. Roundabout/exit instructions carry no side for the watch and parse as `UNKNOWN` (`?`).
-  - **Bilingual Parsing:** Supports English (`Turn left`, `In 200 m`, `Head north`) and Vietnamese (`Rẽ trái`, `Đi về hướng`, `Nhập vào`).
+  - **English-Only Text Parsing:** Keyword matching covers English instruction phrasing only — set the phone locale to English so Maps emits English strings (see §5). Street names pass through verbatim (diacritics kept); direction for non-English/icon-only frames comes from the language-free `IconClassifier`.
   - **No Next-Turn Distance:** Next-turn distance is deliberately not parsed — it cannot be extracted reliably from the Maps notification, so nothing depends on it. Only the trip line's *remaining* distance is read (display-only, plus the far-from-arrival `DEST` plausibility guard).
   - **Status States:** Identifies rerouting states, searching for GPS, and final arrival.
 

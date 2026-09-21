@@ -38,7 +38,7 @@ StarPath requires specific Android permissions to function as intended. All data
 
 StarPath interacts locally with:
 * **Google Maps**: To read navigation updates while you navigate.
-* **Companion Watch Apps (e.g. Zepp App)**: By posting a clean Android notification card, which your companion watch app forwards over Bluetooth Low Energy (BLE) to your paired smartwatch.
+* **Companion Watch Apps (Zepp App or Gadgetbridge — exactly one; see `docs/COMPATIBILITY.md`)**: By posting a clean Android notification card, which your companion watch app forwards over Bluetooth Low Energy (BLE) to your paired smartwatch.
 
 Please refer to Google's and your smartwatch companion app's respective privacy policies for how they handle notifications forwarded over Bluetooth.
 

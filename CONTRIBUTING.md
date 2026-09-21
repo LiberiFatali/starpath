@@ -35,30 +35,28 @@ cd starpath
 
 ---
 
-## 🗺️ Adding a New Language or Fixing Parsing
+## 🗺️ Fixing Parsing (English Phrasing Variants)
 
-Google Maps notifications vary slightly across regions and languages. Most contributions involve updating `GMapsParser.kt`.
+Google Maps notification wording varies slightly across regions. Text parsing is English-only (set the phone locale to English; street names pass through verbatim) — the icon classifier covers icon-only / non-English frames language-free. See `docs/IMPLEMENTATION.md §5` for the canonical decision order (confident icon verdict wins over text) and `docs/IMPLEMENTATION.md §4` for the canonical capture steps. Most contributions involve updating `GMapsParser.kt` for new English phrasing.
 
 ### 1. Capture Raw Notification Dumps
-Connect your phone with USB debugging enabled, start Google Maps navigation, and capture the raw notification payload:
+
+Canonical steps live in `docs/IMPLEMENTATION.md §4` (no adb needed: StarPath → **Last Maps notification** → **Copy/Share debug info**). With USB debugging, alternatively:
 ```bash
-adb logcat -s StarPathListener GMapsParser
-```
-Or view the full extras via dumpsys:
-```bash
+adb logcat -s StarPath
 adb shell dumpsys notification --noredact | grep -A 30 "com.google.android.apps.maps"
 ```
 
 ### 2. Add Keywords to Parser
 Edit [`app/src/main/java/app/starpath/nav/parse/GMapsParser.kt`](app/src/main/java/app/starpath/nav/parse/GMapsParser.kt):
-- Add maneuver keywords to regex patterns (e.g. left/right/straight keywords).
-- Add distance units if your language uses localized symbols.
+- Add English maneuver phrasing to the existing guards (e.g. turn/continue/head-straight variants). Do not add non-English keywords — text parsing is English-only by design; non-English frames defer to the icon classifier.
+- Do not add next-turn distance parsing — it cannot be extracted reliably from the Maps notification (only the trip line's *remaining* distance is read).
 
 ### 3. Add Unit Tests
 Add your captured notification text to [`app/src/test/java/app/starpath/nav/parse/GMapsParserTest.kt`](app/src/test/java/app/starpath/nav/parse/GMapsParserTest.kt):
 ```kotlin
 @Test
-fun `parses localized maneuver correctly`() {
+fun `parses english phrasing variant correctly`() {
     val update = GMapsParser.parse(
         title = "In 300 m - Turn left",
         text = "Main Street • ETA 10:45 AM",
@@ -82,7 +80,7 @@ fun `parses localized maneuver correctly`() {
 
 1. Create a descriptive feature branch:
    ```bash
-   git checkout -b feat/add-spanish-support
+   git checkout -b feat/parse-english-variant
    ```
 2. Commit your changes with clear commit messages following Conventional Commits format (e.g. `feat: ...`, `fix: ...`, `docs: ...`).
 3. Push to your fork and submit a Pull Request to the `main` branch.
@@ -95,36 +93,14 @@ fun `parses localized maneuver correctly`() {
 
 ## 🏷️ Releasing a New Version
 
-Releases are cut via the **Release** workflow (Actions →
-Release → Run workflow on branch `main`, optional `version` input — empty
-auto-bumps minor from the latest tag). It:
+Releases are cut ONLY via the **Release** workflow (Actions → Release → Run workflow on branch `main`, optional `version` input — empty auto-bumps minor). The workflow header in `.github/workflows/release.yml` is canonical for the version scheme (`0.MINOR` / `MINOR`), tag format, and bot-owned files — do not duplicate its mechanics here.
 
-1. Bumps the version literals in `app/build.gradle.kts`
-   (`versionName 0.MINOR` / `versionCode MINOR`, e.g. `0.7` / `7`) and the
-   `SECURITY.md` supported-version row, and commits to `main`
-   (`release: bump to v0.7`). The literals stay literal — F-Droid's
-   checkupdates parser reads them, so never derive them from env/tags.
-2. Tags that exact commit (`v0.7`) so the tag always carries correct
-   literals (F-Droid builds from the tag commit).
-3. Builds the signed APK from the tag, creates
-   the GitHub Release with checksums, and syncs back to `main` (bot
-   commit): a fastlane changelog stub at
-   `fastlane/metadata/android/en-US/changelogs/<code>.txt` (only if
-   missing) and a new `Builds` entry plus `CurrentVersion` fields in
-   `fdroid/app.starpath.yml`.
+What contributors need to know:
 
-Notes:
-
-- Direct `git tag` pushes are inert — no workflow listens to them. Use
-  the Release workflow.
-- The workflow aborts before any bump/tag if `main` has no new non-bot
-  commits since the latest tag (bot `chore(fdroid)` sync-backs don't
-  count), so accidental clicks never cut an empty release.
-- Tag format is `v0.<minor>` (e.g. `v0.7`). Patch or major versions
-  (e.g. `v0.7.1`, `v1.0`) are rejected until the versionCode scheme is
-  migrated to a computed mapping.
-- Local builds use the checked-in version literals (kept literal so
-  F-Droid's checkupdates parser can read them).
+- Direct `git tag` pushes are inert — no workflow listens to them. Use the Release workflow.
+- Never hand-edit the bot-owned outputs: version literals in `app/build.gradle.kts`, the `SECURITY.md` supported-version row, `fastlane/metadata/android/en-US/changelogs/<code>.txt`, or the `fdroid/app.starpath.yml` sync-back (`Builds` / `CurrentVersion*`). (`fdroid/app.starpath.yml` is otherwise hand-editable; keep `Builds` / `CurrentVersion*` plain literals in sync.)
+- Tag format is `v0.<minor>` (patch/major rejected until the versionCode scheme migrates).
+- Local builds use the checked-in version literals (kept literal so F-Droid's checkupdates parser can read them).
 
 ---
 
