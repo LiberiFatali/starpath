@@ -11,14 +11,13 @@ import app.starpath.nav.parse.MapsRemoteParser
 /**
  * Intercepts the Google Maps navigation notification, parses it, and
  * delivers it as a glanceable turn card through exactly one companion app:
- * the Zepp App (phone notification it forwards over BLE) or Gadgetbridge
- * (PebbleKit broadcast). Both installed — or neither — blocks all delivery
- * until the user keeps exactly one (see [DeliveryPaths]).
+ * the Zepp App or Gadgetbridge (both mirror our phone notification over
+ * BLE). Both installed — or neither — blocks all delivery until the user
+ * keeps exactly one (see [DeliveryPaths]).
  */
 class StarPathListener : NotificationListenerService() {
 
     private lateinit var notifier: NavNotifier
-    private lateinit var gbSender: GadgetbridgeSender
     private val alertManager = NavAlertManager()
     private var mapsActive = false
     private var blockedNotified = false
@@ -27,7 +26,6 @@ class StarPathListener : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         notifier = NavNotifier(this).also { it.ensureChannels() }
-        gbSender = GadgetbridgeSender(this)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -95,13 +93,14 @@ class StarPathListener : NotificationListenerService() {
         val useAscii = getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
             .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
         val card = NavFormatter.toCard(update, useAscii)
-        // Exactly one path fires per card: Zepp re-posts the phone
-        // notification it mirrors; Gadgetbridge gets the same card as a
-        // PebbleKit broadcast (fire-and-forget, no phone notification).
-        when (path) {
-            DeliveryPath.GADGETBRIDGE -> gbSender.send(card)
-            else -> notifier.post(card, alert = alertDecision.shouldAlert)
-        }
+        // Single delivery model for both paths: re-post the phone card and
+        // let the companion app (Zepp App Alerts or Gadgetbridge
+        // notification mirroring) forward it over BLE. Cancelling the same
+        // card on navigation end (see onNotificationRemoved) therefore
+        // clears the watch on both paths — direct broadcast intents to the
+        // companion app could never be retracted, so only the mirrored
+        // phone card is used.
+        notifier.post(card, alert = alertDecision.shouldAlert)
         lastPosted = update
     }
 

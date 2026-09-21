@@ -1,7 +1,6 @@
 package app.starpath.ui
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -28,7 +27,6 @@ import app.starpath.nav.model.NavUpdate
 import app.starpath.nav.parse.LastParse
 import app.starpath.nav.runtime.DeliveryPath
 import app.starpath.nav.runtime.DeliveryPaths
-import app.starpath.nav.runtime.GadgetbridgeSender
 import app.starpath.nav.runtime.KeepAliveService
 import app.starpath.nav.runtime.NavFormatter
 import app.starpath.nav.runtime.NavNotifier
@@ -51,7 +49,6 @@ class MainActivity : Activity() {
         POST_NOTIFS,
         BATTERY,
         LISTENER,
-        PEBBLE,
     }
 
     private lateinit var status: TextView
@@ -202,7 +199,7 @@ class MainActivity : Activity() {
             textSize = 14f
             text = "\nOne watch app only: Zepp or Gadgetbridge (both installed blocks StarPath).\n" +
                 "\nZepp: enable notification mirroring, then select StarPath.\n" +
-                "Gadgetbridge: set Pebble Messages to Always (the setup flow asks you to confirm this).\n" +
+                "Gadgetbridge: enable StarPath under Notifications.\n" +
                 "\nOn the watch: screen-on duration 15s–30s, DND off, stay connected over Bluetooth.\n" +
                 "StarPath re-wakes the watch on each turn and repeats every 30s until the turn changes.\n" +
                 "Cards only arrive with the screen off? Turn that option off in your companion app " +
@@ -214,10 +211,6 @@ class MainActivity : Activity() {
         setContentView(ScrollView(this).apply { addView(layout) })
         refreshStatus()
     }
-
-    private fun isPebbleConfirmed(): Boolean =
-        getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
-            .getBoolean(DeliveryPaths.PREF_PEBBLE_ALWAYS_CONFIRMED, false)
 
     private fun startOnboarding() {
         val notifsOk = isNotificationsEnabled()
@@ -236,10 +229,6 @@ class MainActivity : Activity() {
             !listenerOk -> {
                 pendingStep = PendingStep.LISTENER
                 openNotificationListenerSettings()
-            }
-            DeliveryPaths.shouldPromptPebble(deliveryPath(), isPebbleConfirmed()) -> {
-                pendingStep = PendingStep.PEBBLE
-                promptPebbleSetting()
             }
             else -> {
                 pendingStep = PendingStep.NONE
@@ -279,56 +268,6 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun openGadgetbridgeSettings() {
-        try {
-            val launch = packageManager.getLaunchIntentForPackage(DeliveryPaths.GADGETBRIDGE_PACKAGE)
-            if (launch != null) {
-                startActivity(launch)
-            } else {
-                Toast.makeText(this, "Gadgetbridge not found — is it still installed?", Toast.LENGTH_LONG).show()
-            }
-        } catch (_: Exception) {
-            Toast.makeText(this, "Could not open Gadgetbridge — open it manually", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    /**
-     * Blocking setup step for the Gadgetbridge path: our cards travel via
-     * Gadgetbridge's Pebble inbox, which silently drops them unless Pebble
-     * Messages is Always. Gadgetbridge prefs are private to its UID, so
-     * this relies on manual confirmation persisted in our own prefs.
-     */
-    private fun promptPebbleSetting() {
-        AlertDialog.Builder(this)
-            .setTitle("Gadgetbridge: allow Pebble Messages")
-            .setMessage(
-                "StarPath reaches your watch through Gadgetbridge's Pebble inbox, " +
-                    "which drops cards unless Pebble Messages is Always.\n\n" +
-                    "In Gadgetbridge: Settings → Notifications → Pebble Messages → Always, " +
-                    "then come back and confirm."
-            )
-            .setNeutralButton("Open Gadgetbridge settings") { _, _ -> openGadgetbridgeSettings() }
-            .setPositiveButton("Done — set to Always") { _, _ ->
-                getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE).edit()
-                    .putBoolean(DeliveryPaths.PREF_PEBBLE_ALWAYS_CONFIRMED, true)
-                    .apply()
-                refreshStatus()
-                if (pendingStep == PendingStep.PEBBLE) {
-                    pendingStep = PendingStep.NONE
-                    startOnboarding()
-                }
-            }
-            .setNegativeButton("Cancel") { _, _ ->
-                pendingStep = PendingStep.NONE
-                Toast.makeText(this, "Pebble step skipped — cards may not reach the watch", Toast.LENGTH_LONG).show()
-                refreshStatus()
-            }
-            .setOnCancelListener {
-                if (pendingStep == PendingStep.PEBBLE) pendingStep = PendingStep.NONE
-            }
-            .show()
-    }
-
     private fun requestBatteryExemption() {
         val pm = getSystemService(PowerManager::class.java)
         if (pm?.isIgnoringBatteryOptimizations(packageName) != true) {
@@ -359,8 +298,7 @@ class MainActivity : Activity() {
     }
 
     private fun allPermissionsGranted(): Boolean =
-        isNotificationListenerEnabled() && isNotificationsEnabled() && isBatteryOptimizationDisabled() &&
-            !DeliveryPaths.shouldPromptPebble(deliveryPath(), isPebbleConfirmed())
+        isNotificationListenerEnabled() && isNotificationsEnabled() && isBatteryOptimizationDisabled()
 
     private fun sendTestCard() {
         val card = NavFormatter.toCard(
@@ -372,18 +310,10 @@ class MainActivity : Activity() {
             ),
             isAsciiArrows(),
         )
-        // Test cards obey the same single-path gate as live navigation.
+        // Test cards obey the same single-path gate as live navigation, and
+        // use the same mirrored phone card on both paths.
         when (val path = deliveryPath()) {
-            DeliveryPath.GADGETBRIDGE -> {
-                if (GadgetbridgeSender(this).send(card)) {
-                    val warn =
-                        if (isPebbleConfirmed()) "" else " (set Pebble Messages to Always in GB if the watch stays silent)"
-                    Toast.makeText(this, "Test card sent via Gadgetbridge! Check watch$warn", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(this, "Gadgetbridge send failed — is it still installed?", Toast.LENGTH_LONG).show()
-                }
-            }
-            DeliveryPath.ZEPP -> {
+            DeliveryPath.ZEPP, DeliveryPath.GADGETBRIDGE -> {
                 NavNotifier(this).post(card, alert = true)
                 Toast.makeText(this, "Test card sent! Check phone notification & watch", Toast.LENGTH_SHORT).show()
             }
@@ -430,16 +360,6 @@ class MainActivity : Activity() {
                     Toast.makeText(this, "Notification access was not enabled. Tap Grant Permissions to retry.", Toast.LENGTH_SHORT).show()
                 }
             }
-            PendingStep.PEBBLE -> {
-                // Gadgetbridge setting is not programmatically readable:
-                // re-show the prompt when returning so the user confirms or cancels.
-                if (isPebbleConfirmed()) {
-                    pendingStep = PendingStep.NONE
-                    startOnboarding()
-                } else {
-                    promptPebbleSetting()
-                }
-            }
             else -> {}
         }
     }
@@ -466,15 +386,14 @@ class MainActivity : Activity() {
         val notifsOk = isNotificationsEnabled()
         val batteryOk = isBatteryOptimizationDisabled()
         val path = deliveryPath()
-        val pebbleOk = !DeliveryPaths.shouldPromptPebble(path, isPebbleConfirmed())
-        val allOk = listenerOn && notifsOk && batteryOk && pebbleOk
+        val allOk = listenerOn && notifsOk && batteryOk
 
         status.text = "Notification Access: ${if (listenerOn) "ON ✓" else "OFF ✗"}\n" +
             "StarPath Notifications: ${if (notifsOk) "ON ✓" else "OFF ✗"}\n" +
             "Battery Optimization: ${if (batteryOk) "unrestricted ✓" else "optimized ✗"}\n" +
             "${deliveryLine(path)}\n" +
             (if (path == DeliveryPath.GADGETBRIDGE) {
-                "Pebble Messages: ${if (pebbleOk) "Always ✓" else "set to Always in Gadgetbridge ⚠"}\n"
+                "Gadgetbridge: enable StarPath under Notifications\n"
             } else {
                 ""
             }) +

@@ -8,10 +8,10 @@ import android.os.Build
  * Which companion app StarPath delivers turn cards through.
  *
  * Exactly one companion app may be installed: the Zepp App (stable default)
- * or Gadgetbridge (extra path; PebbleKit alerts proven on Amazfit Active 2,
- * issue #2). Both installed — or neither — blocks all delivery until the
- * user keeps exactly one, because two feeders fight over the watch's single
- * Bluetooth link (reconnect loop observed Sep 2026).
+ * or Gadgetbridge (same mirrored phone card). Both installed — or neither —
+ * blocks all delivery until the user keeps exactly one, because two feeders
+ * fight over the watch's single Bluetooth link (reconnect loop observed
+ * Sep 2026).
  */
 enum class DeliveryPath {
     ZEPP,
@@ -36,16 +36,6 @@ object DeliveryPaths {
     const val ZEPP_PACKAGE = "com.huami.watch.hmwatchmanager"
     const val GADGETBRIDGE_PACKAGE = "nodomain.freeyourgadget.gadgetbridge"
     const val PREF_DELIVERY_PATH = "delivery_path"
-    const val PREF_PEBBLE_ALWAYS_CONFIRMED = "pebble_always_confirmed"
-
-    /**
-     * Whether the 1-tap setup must prompt for Gadgetbridge's Pebble Messages
-     * setting. Gadgetbridge drops our PebbleKit cards unless it is Always,
-     * and its prefs are private to its own UID — so StarPath cannot probe
-     * the value and relies on this manual confirmation instead.
-     */
-    fun shouldPromptPebble(path: DeliveryPath, pebbleConfirmed: Boolean): Boolean =
-        path == DeliveryPath.GADGETBRIDGE && !pebbleConfirmed
 
     /**
      * Pure resolution over an install-probe, so the full matrix is JVM-tested.

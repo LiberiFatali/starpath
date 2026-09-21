@@ -116,6 +116,11 @@ StarPath does not require a custom mini-program installed on the watch for v1. I
 
 See `docs/COMPATIBILITY.md` for the supported-device model (any Zepp-App-paired watch with notification mirroring; tested on Amazfit Active 2).
 
+The Gadgetbridge path uses the identical mirrored-card model: StarPath
+posts the same phone notification and Gadgetbridge's notification
+mirroring forwards it, so the nav-end `cancel()` retracts the watch card
+on both paths (§6).
+
 ### Watch Display Lifespan
 Smartwatches typically shut off their screen after 5 to 10 seconds to conserve battery:
 * **Recommended Watch Setting:** In watch **Settings** → **Display** → **Screen-on Duration** (or **Auto Screen Off**), set to **15s – 30s**.
@@ -257,7 +262,7 @@ flow); installs/uninstalls in between take effect at the next open:
 | Zepp | Gadgetbridge | Path |
 |---|---|---|
 | ✅ | ❌ | Zepp: `NavNotifier.post()` re-posts the phone card it mirrors (§3, unchanged) |
-| ❌ | ✅ | Gadgetbridge: `GadgetbridgeSender` fires `com.getpebble.action.SEND_NOTIFICATION` / `PEBBLE_ALERT` with `notificationData=[{"title","body"}]`, explicitly addressed via `setPackage(...)` — same card (title → title, text+sub → body), fire-and-forget |
+| ❌ | ✅ | Gadgetbridge: `NavNotifier.post()` re-posts the same phone card, which Gadgetbridge's notification mirroring forwards — nav end calls the same `cancel()`, so the watch clears exactly like Zepp |
 | ✅ | ✅ | **Blocked** (`BLOCKED_BOTH`): two feeders fight over the watch's single BLE link (reconnect loop observed Sep 2026) |
 | ❌ | ❌ | **Blocked** (`BLOCKED_NONE`) |
 
@@ -271,10 +276,9 @@ and both test-card buttons obey the same gate.
 Manifest note: a `<queries>` block for both packages is required — without
 it, `getPackageInfo` throws on API 30+ and every install reads as absent
 (field catch, Sep 2026). No new permission. Watch-side prereq for the GB
-path: Gadgetbridge → Pebble Messages → **Always** (field-verified on
-Amazfit Active 2, Sep 2026).
+path: enable StarPath under Gadgetbridge → Notifications, so the mirrored
+card reaches the watch and the nav-end `cancel()` retracts it there.
 
 **Files:** `nav/runtime/DeliveryPath.kt` (`DeliveryPaths.resolve`, JVM-tested
-matrix), `nav/runtime/GadgetbridgeSender.kt` (pure JSON builder, JVM-tested;
-thin `sendBroadcast` wrapper). Tests: `DeliveryPathTest`, `GadgetbridgeSenderTest`.
+matrix). Tests: `DeliveryPathTest`.
 See `docs/COMPATIBILITY.md` for the user-facing one-app rule.

@@ -71,17 +71,4 @@ class DeliveryPathTest {
         assertNull(DeliveryPaths.fromStorage(""))
         assertNull(DeliveryPaths.fromStorage("zepp "))
     }
-
-    @Test
-    fun `pebble prompt fires only for unconfirmed gadgetbridge`() {
-        assertTrue(DeliveryPaths.shouldPromptPebble(DeliveryPath.GADGETBRIDGE, false))
-    }
-
-    @Test
-    fun `pebble prompt stays silent otherwise`() {
-        assertFalse(DeliveryPaths.shouldPromptPebble(DeliveryPath.GADGETBRIDGE, true))
-        assertFalse(DeliveryPaths.shouldPromptPebble(DeliveryPath.ZEPP, false))
-        assertFalse(DeliveryPaths.shouldPromptPebble(DeliveryPath.BLOCKED_BOTH, false))
-        assertFalse(DeliveryPaths.shouldPromptPebble(DeliveryPath.BLOCKED_NONE, false))
-    }
 }

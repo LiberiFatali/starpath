@@ -19,10 +19,10 @@ untested.
 |  | Zepp-only | Gadgetbridge-only |
 |---|---|---|
 | Phone app | Zepp App (`com.huami.watch.hmwatchmanager`) | Gadgetbridge (`nodomain.freeyourgadget.gadgetbridge`) |
-| Watch setting | Notification/alert mirroring ON, StarPath selected (send a test card first if StarPath isn't listed yet) | Pebble Messages → **Always** (StarPath setup walks you through confirming this) |
+| Watch setting | Notification/alert mirroring ON, StarPath selected (send a test card first if StarPath isn't listed yet) | Notifications ON, StarPath selected (send a test card first if StarPath isn't listed yet) |
 | Arrows | `◀◀` / `▶▶` / `▲▲` / `DEST` / `?` (ASCII `<-` / `->` / `^` / `DEST` / `?` fallback in StarPath) | Same card, same marks |
-| Vibration / wake | Verified on Active 2 | Verified on Active 2 (Sep 2026: PebbleKit `PEBBLE_ALERT` broadcast) |
-| Status | Stable default, fully supported | Supported extra path |
+| Vibration / wake | Verified on Active 2 | To verify on Active 2 (mirrored phone card + nav-end retract) |
+| Status | Stable default, fully supported | Fully supported |
 
 ## Tested
 

@@ -10,7 +10,8 @@ import androidx.core.app.NotificationCompat
 import app.starpath.ui.MainActivity
 /**
  * Re-posts the parsed navigation state as StarPath's own notification.
- * This is the card Zepp App Alerts forwards over BLE to the watch.
+ * This is the card the companion app (Zepp App Alerts or Gadgetbridge
+ * notification mirroring) forwards over BLE to the watch.
  */
 class NavNotifier(private val context: Context) {
 
