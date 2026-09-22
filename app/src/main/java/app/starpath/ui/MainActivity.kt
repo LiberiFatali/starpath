@@ -201,7 +201,8 @@ class MainActivity : Activity() {
                 "\nZepp: enable notification mirroring, then select StarPath.\n" +
                 "Gadgetbridge: enable StarPath under Notifications.\n" +
                 "\nOn the watch: screen-on duration 15s–30s, DND off, stay connected over Bluetooth.\n" +
-                "StarPath re-wakes the watch on each turn and repeats every 30s until the turn changes.\n" +
+                "StarPath re-wakes the watch on each turn or street change — " +
+                    "repeating every 30s near arrival (DEST) or 5min otherwise until it changes.\n" +
                 "Cards only arrive with the screen off? Turn that option off in your companion app " +
                 "— or use the 5s button and lock the phone.\n" +
                 "\nNavigate in Google Maps with the phone in your pocket — " +

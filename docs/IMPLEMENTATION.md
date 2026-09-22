@@ -26,8 +26,8 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 │                                        ▼               │
 │                            ┌───────────────────────┐   │
 │                            │    NavAlertManager    │   │
-│                            │ (Change & 30s stale   │   │
-│                            │  reminder)            │   │
+│                            │ (Change & 30s DEST /  │   │
+│                            │  5min stale reminder) │   │
 │                            └───────────┬───────────┘   │
 │                                        │               │
 │                                        ▼               │
@@ -75,10 +75,10 @@ StarPath operates as a zero-network, local companion bridge between Google Maps 
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavAlertManager.kt`
 * **Role:** Decides whether an incoming update should trigger an alert (vibrate & wake the watch display) or remain silent.
 * **Logic (no distance — next-turn distance is unparseable):**
-  1. **Maneuver Change:** Always triggers an alert when the requested action changes (e.g. `STRAIGHT` -> `TURN_LEFT`).
+  1. **Instruction Change:** Always triggers an alert when the dedup key changes (canonical direction, normalized street, or state — e.g. `STRAIGHT` -> `TURN_LEFT`, or the same arrow onto a new street).
   2. **Rerouting:** Always triggers an alert on route recalculation.
-  3. **Stale Reminder:** Triggers an alert when the same instruction (canonical direction + street + state) is unchanged for 30s, repeating every 30s until it changes — the reminder of the upcoming turn while approaching it. Applies to all maneuvers, including straight cruising.
-* **Pipeline order:** `StarPathListener` evaluates the alert manager *before* the `NavDedup` check, so a stale reminder re-posts even though the instruction is dedup-identical; identical re-posts inside the 30s window stay silent.
+  3. **Stale Reminder:** Triggers an alert when the same instruction is unchanged — after 30s for `DEST` (final approach is last-chance) or 5min for anything else — repeating every interval until it changes. Applies to all maneuvers, including straight cruising.
+* **Pipeline order:** `StarPathListener` evaluates the alert manager *before* the `NavDedup` check, so a stale reminder re-posts even though the instruction is dedup-identical; identical re-posts inside the window stay silent.
 
 ### `NavNotifier`
 * **File:** `app/src/main/java/app/starpath/nav/runtime/NavNotifier.kt`
@@ -124,7 +124,7 @@ on both paths (§6).
 ### Watch Display Lifespan
 Smartwatches typically shut off their screen after 5 to 10 seconds to conserve battery:
 * **Recommended Watch Setting:** In watch **Settings** → **Display** → **Screen-on Duration** (or **Auto Screen Off**), set to **15s – 30s**.
-* **Automated Wakeup:** StarPath's `NavAlertManager` maneuver-change alerts and 30s stale-instruction reminders ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
+* **Automated Wakeup:** StarPath's `NavAlertManager` instruction-change alerts and stale-instruction reminders (30s near arrival, 5min otherwise) ensure the watch wakes up automatically as you approach intersections without needing to touch the watch.
 
 ---
 
@@ -228,7 +228,8 @@ it reads Maps' arrow **pixels** and re-emits the verdict as a **text mark**
     — Maps does send it, rarely, text-only — but the notification carries no
     side, so the display stays `?`). Strict dedup skips re-posts with no
     direction/place/state change; the alert manager still re-posts on
-    maneuver change, rerouting, or the 30s stale-instruction reminder.
+    instruction change, rerouting, or the stale-instruction reminder
+    (30s DEST / 5min otherwise).
 
 **Field evidence** (user screenshots, Sep 2026): `Head south` + straight icon →
 `▲▲` via icon (text yields `?`); icon-only `40 m` + street + left-hook → `◀◀` via moments;

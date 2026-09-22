@@ -70,8 +70,9 @@ class StarPathListener : NotificationListenerService() {
         // stale REROUTING card (state-transition bypass inside shouldForward).
         if (!NavGate.shouldForward(update, outcome.appliedIcon, lastPosted)) return
 
-        // Alert first: NavAlertManager tracks maneuver changes and the 30s
-        // stale-instruction reminder. Its NONE verdicts record no state, so
+        // Alert first: NavAlertManager tracks instruction changes and the
+        // stale-instruction reminder (30s for DEST arrival, 5min otherwise).
+        // Its NONE verdicts record no state, so
         // evaluating speculatively here is safe.
         val alertDecision = alertManager.evaluate(update)
 
