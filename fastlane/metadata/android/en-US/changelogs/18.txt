@@ -1,0 +1,4 @@
+- Release 0.18.
+- chore(fdroid): sync metadata for v0.17 [skip ci]
+- refactor(nav): update NavAlertManager logic for stale reminders and alert conditions
+- release: bump to v0.18
