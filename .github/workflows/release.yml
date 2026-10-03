@@ -114,11 +114,31 @@ jobs:
           EOF
           git diff --stat
 
+      - name: Ensure fastlane changelog exists (pre-tag)
+        # The tag must carry the changelog: F-Droid builds the tagged commit,
+        # so a changelog generated after tagging never ships in that build.
+        run: |
+          CODE="${VERSION#0.}"
+          CHANGELOG="fastlane/metadata/android/en-US/changelogs/$CODE.txt"
+          if [ -f "$CHANGELOG" ]; then
+            echo "Changelog $CHANGELOG already exists, leaving it."
+            exit 0
+          fi
+          PREV_TAG="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          {
+            echo "- Release $VERSION."
+            if [ -n "$PREV_TAG" ]; then
+              git log "$PREV_TAG..HEAD" --format='- %s' --reverse \
+                --grep='^chore(fdroid)' --grep='\[skip ci\]' --grep='^release: bump' --invert-grep | head -n 20
+            fi
+          } > "$CHANGELOG"
+          cat "$CHANGELOG"
+
       - name: Commit, push & tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add app/build.gradle.kts SECURITY.md
+          git add app/build.gradle.kts SECURITY.md "fastlane/metadata/android/en-US/changelogs/${VERSION#0.}.txt"
           if git diff --cached --quiet; then
             echo "::error::Nothing to bump (already at $VERSION?)."
             exit 1
@@ -156,6 +176,7 @@ jobs:
           echo "Resolved $VERSION -> versionName=$VERSION versionCode=$MINOR"
 
       - name: Ensure fastlane changelog exists
+        # Fallback only: bump-and-tag already commits the changelog pre-tag.
         run: |
           CHANGELOG="fastlane/metadata/android/en-US/changelogs/${{ steps.version.outputs.version_code }}.txt"
           if [ -f "$CHANGELOG" ]; then
@@ -167,9 +188,11 @@ jobs:
           {
             echo "- Release ${{ steps.version.outputs.version_name }}."
             if [ -n "$PREV_TAG" ]; then
-              git log "$PREV_TAG..HEAD" --format='- %s' --reverse | head -n 20
+              git log "$PREV_TAG..HEAD" --format='- %s' --reverse \
+                --grep='^chore(fdroid)' --grep='\[skip ci\]' --grep='^release: bump' --invert-grep | head -n 20
             else
-              git log --format='- %s' --reverse | head -n 20
+              git log --format='- %s' --reverse \
+                --grep='^chore(fdroid)' --grep='\[skip ci\]' --grep='^release: bump' --invert-grep | head -n 20
             fi
           } > "$CHANGELOG"
           cat "$CHANGELOG"

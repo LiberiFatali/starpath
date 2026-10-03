@@ -1,7 +1,7 @@
-StarPath brings glanceable Google Maps navigation directions directly to your Amazfit watch via the Zepp app while your phone stays safely in your pocket or bag. Tested on Amazfit Active 2; expected to work on any Zepp-paired watch with notification mirroring.
+StarPath brings glanceable Google Maps navigation directions directly to your Amazfit watch via the Zepp app or Gadgetbridge while your phone stays safely in your pocket or bag. Tested on Amazfit Active 2; expected to work on any Zepp- or Gadgetbridge-paired watch with notification mirroring.
 
 ★ How It Works
-StarPath reads Google Maps navigation notifications, reformats them into high-contrast directional cards, and mirrors them over Bluetooth Low Energy via the Zepp app to your watch.
+StarPath reads Google Maps navigation notifications, reformats them into high-contrast directional cards, and the Zepp app or Gadgetbridge mirrors them to your watch over Bluetooth (StarPath itself uses no Bluetooth code).
 
 ★ Key Features
 • Large Directional Badges: Custom rendered high-contrast turn arrows designed specifically for quick glances on smartwatch displays.
