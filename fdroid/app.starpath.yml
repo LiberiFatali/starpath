@@ -1,8 +1,8 @@
-Categories:
-  - Navigation
 AntiFeatures:
   NonFreeDep:
     en-US: Only works with Google Maps (proprietary) navigation notifications.
+Categories:
+  - Navigation
 License: GPL-3.0-or-later
 AuthorName: LiberiFatali
 SourceCode: https://github.com/LiberiFatali/starpath
