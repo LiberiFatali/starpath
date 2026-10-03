@@ -1,0 +1,2 @@
+- Release 0.19.
+- feat(ci): include changelog in release commit and add AntiFeatures
