@@ -1,0 +1,2 @@
+- Release 0.21.
+- feat(ui): redesign settings and add collapsible sections
