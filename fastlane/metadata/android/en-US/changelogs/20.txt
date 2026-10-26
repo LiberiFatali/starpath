@@ -1,0 +1,4 @@
+- Release 0.20.
+- fix(fdroid): Reorder metadata fields in metadata yaml
+- docs(readme): add F-Droid badge and update Gadgetbridge instructions
+- docs(readme): Increase F-Droid badge height
