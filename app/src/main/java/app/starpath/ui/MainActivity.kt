@@ -7,8 +7,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -44,6 +46,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val REQ_POST_NOTIFS = 101
+        private const val PREF_GB_DISMISSED = "gb_dismissed"
     }
 
     private enum class PendingStep {
@@ -54,7 +57,8 @@ class MainActivity : Activity() {
     }
 
     private lateinit var status: TextView
-    private lateinit var gbWarning: TextView
+    private lateinit var gbCard: LinearLayout
+    private lateinit var gbShowButton: Button
     private lateinit var setupButton: Button
     private lateinit var asciiButton: Button
     private lateinit var lastParseView: TextView
@@ -63,6 +67,16 @@ class MainActivity : Activity() {
     private fun isAsciiArrows(): Boolean =
         getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
             .getBoolean(NavFormatter.PREF_ASCII_ARROWS, false)
+
+    private fun isGbDismissed(): Boolean =
+        getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE)
+            .getBoolean(PREF_GB_DISMISSED, false)
+
+    private fun setGbDismissed(dismissed: Boolean) {
+        getSharedPreferences(NavFormatter.PREFS_FILE, MODE_PRIVATE).edit()
+            .putBoolean(PREF_GB_DISMISSED, dismissed)
+            .apply()
+    }
 
     /**
      * Active delivery path: the stored one-time choice (first run), refreshed
@@ -80,6 +94,7 @@ class MainActivity : Activity() {
             DeliveryPath.GADGETBRIDGE -> "Delivery: Gadgetbridge ✓"
             DeliveryPath.BLOCKED_BOTH ->
                 "Delivery: BLOCKED ✗ (keep only Zepp or only Gadgetbridge)"
+
             DeliveryPath.BLOCKED_NONE ->
                 "Delivery: BLOCKED ✗ (install Zepp or Gadgetbridge)"
         }
@@ -87,6 +102,10 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         NavNotifier(this).ensureChannels()
+
+        val dp = resources.displayMetrics.density
+        val isDark =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -96,19 +115,92 @@ class MainActivity : Activity() {
             text = "★ StarPath v${BuildConfig.VERSION_NAME}"
             textSize = 24f
         }
-        gbWarning = TextView(this).apply {
-            textSize = 14f
-            setTextColor(Color.rgb(0xE6, 0x51, 0x00))
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 12, 0, 4)
+        layout.addView(title)
+
+        // Highlighted Gadgetbridge setup card
+        gbCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = (12 * dp).toInt()
+            setPadding(pad, pad, pad, pad)
+            val cardBg = GradientDrawable().apply {
+                setColor(if (isDark) Color.parseColor("#332211") else Color.parseColor("#FFF3E0"))
+                setStroke((2 * dp).toInt(), if (isDark) Color.parseColor("#FF9800") else Color.parseColor("#F57C00"))
+                cornerRadius = 12 * dp
+            }
+            background = cardBg
             visibility = View.GONE
         }
+
+        val gbTitle = TextView(this).apply {
+            text = "⚠ IMPORTANT: Gadgetbridge Setup"
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#E65100"))
+            setPadding(0, 0, 0, (6 * dp).toInt())
+        }
+        gbCard.addView(gbTitle)
+
+        val gbStep = TextView(this).apply {
+            text =
+                "Turn ON \"…also when screen is on\"\n(Settings → Notifications)\nCRITICAL: Gadgetbridge drops turn cards if this is off!"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#BF360C"))
+            setPadding(0, 0, 0, (10 * dp).toInt())
+        }
+        gbCard.addView(gbStep)
+
+        val gbActions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        val openGbBtn = Button(this).apply {
+            text = "Open Gadgetbridge"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = (4 * dp).toInt()
+            }
+            setOnClickListener {
+                val intent = packageManager.getLaunchIntentForPackage(DeliveryPaths.GADGETBRIDGE_PACKAGE)
+                if (intent != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this@MainActivity, "Gadgetbridge app not found", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val dismissGbBtn = Button(this).apply {
+            text = "Dismiss"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = (4 * dp).toInt()
+            }
+            setOnClickListener {
+                setGbDismissed(true)
+                refreshStatus()
+                Toast.makeText(
+                    this@MainActivity,
+                    "Gadgetbridge notes hidden. Tap 'Show notes' anytime to view again.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        gbActions.addView(openGbBtn)
+        gbActions.addView(dismissGbBtn)
+        gbCard.addView(gbActions)
+        layout.addView(gbCard)
+
+        gbShowButton = Button(this).apply {
+            text = "▸ Show Gadgetbridge setup notes"
+            visibility = View.GONE
+            setOnClickListener {
+                setGbDismissed(false)
+                refreshStatus()
+            }
+        }
+        layout.addView(gbShowButton)
+
         status = TextView(this).apply {
             textSize = 15f
             setPadding(0, 8, 0, 16)
         }
-        layout.addView(title)
-        layout.addView(gbWarning)
         layout.addView(status)
 
         setupButton = Button(this).apply {
@@ -155,72 +247,100 @@ class MainActivity : Activity() {
             stopAndExit()
         }
 
-        val debugHeader = TextView(this).apply {
-            textSize = 13f
-            text = "\nLast Maps notification (for wrong-direction reports):"
-            setPadding(0, 16, 0, 4)
+        fun addCollapsibleSection(title: String, buildContent: (LinearLayout) -> Unit) {
+            val contentContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                visibility = View.GONE
+                setPadding(0, 0, 0, (8 * dp).toInt())
+            }
+            val toggleBtn = Button(this).apply {
+                text = "▸ $title"
+                setOnClickListener {
+                    val isExpanded = contentContainer.visibility == View.VISIBLE
+                    contentContainer.visibility = if (isExpanded) View.GONE else View.VISIBLE
+                    text = if (isExpanded) "▸ $title" else "▾ $title"
+                }
+            }
+            layout.addView(toggleBtn)
+            buildContent(contentContainer)
+            layout.addView(contentContainer)
         }
-        layout.addView(debugHeader)
-        lastParseView = TextView(this).apply {
-            textSize = 12f
-            typeface = Typeface.MONOSPACE
-            setPadding(0, 0, 0, 4)
-        }
-        layout.addView(lastParseView)
 
-        addButton("↻ Refresh debug info") {
-            refreshLastParse()
+        addCollapsibleSection("Individual Settings (if needed)") { container ->
+            fun addSectionButton(label: String, onClick: () -> Unit) {
+                container.addView(Button(this).apply {
+                    text = label
+                    setOnClickListener { onClick(); refreshStatus() }
+                })
+            }
+            addSectionButton("• Notification Access (Listener)") {
+                openNotificationListenerSettings()
+            }
+            addSectionButton("• StarPath Notifications") {
+                openAppNotificationSettings()
+            }
+            addSectionButton("• Battery Optimization") {
+                requestBatteryExemption()
+            }
         }
-        addButton("⧉ Copy debug info") {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("StarPath debug", lastParseView.text))
-            Toast.makeText(this, "Debug info copied — paste it in your report", Toast.LENGTH_SHORT).show()
-        }
-        addButton("➦ Share debug info") {
-            startActivity(
-                Intent.createChooser(
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, "StarPath wrong direction report")
-                        putExtra(Intent.EXTRA_TEXT, lastParseView.text.toString())
-                    },
-                    "Share debug info",
+
+        addCollapsibleSection("Debug Info (for wrong-direction reports)") { container ->
+            lastParseView = TextView(this).apply {
+                textSize = 12f
+                typeface = Typeface.MONOSPACE
+                setPadding(0, (6 * dp).toInt(), 0, (6 * dp).toInt())
+            }
+            container.addView(lastParseView)
+
+            fun addDebugButton(label: String, onClick: () -> Unit) {
+                container.addView(Button(this).apply {
+                    text = label
+                    setOnClickListener { onClick() }
+                })
+            }
+            addDebugButton("↻ Refresh debug info") {
+                refreshLastParse()
+            }
+            addDebugButton("⧉ Copy debug info") {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("StarPath debug", lastParseView.text))
+                Toast.makeText(this, "Debug info copied — paste it in your report", Toast.LENGTH_SHORT).show()
+            }
+            addDebugButton("➦ Share debug info") {
+                startActivity(
+                    Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, "StarPath wrong direction report")
+                            putExtra(Intent.EXTRA_TEXT, lastParseView.text.toString())
+                        },
+                        "Share debug info",
+                    )
                 )
-            )
+            }
         }
 
-        val individualSectionHeader = TextView(this).apply {
-            textSize = 13f
-            text = "\nIndividual Settings (if needed):"
-            setPadding(0, 16, 0, 4)
-        }
-        layout.addView(individualSectionHeader)
+        addCollapsibleSection("Tips & Updates") { container ->
+            val tips = TextView(this).apply {
+                textSize = 13f
+                text = "• Set watch screen-on duration to 15s–30s, DND off, Bluetooth connected.\n" +
+                        "• Keep only one companion app installed: Zepp or Gadgetbridge.\n" +
+                        "• StarPath runs automatically in the background when Google Maps navigates.\n" +
+                        "• If turn cards arrive only when your phone screen is off, adjust your companion app's screen settings."
+                setPadding(0, (6 * dp).toInt(), 0, (8 * dp).toInt())
+            }
+            container.addView(tips)
 
-        addButton("• Notification Access (Listener)") {
-            openNotificationListenerSettings()
-        }
-        addButton("• StarPath Notifications") {
-            openAppNotificationSettings()
-        }
-        addButton("• Battery Optimization") {
-            requestBatteryExemption()
+            container.addView(Button(this).apply {
+                text = "Check for Updates (F-Droid / GitHub)"
+                setOnClickListener {
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LiberiFatali/starpath/releases"))
+                    )
+                }
+            })
         }
 
-        val help = TextView(this).apply {
-            textSize = 14f
-            text = "\nOne watch app only: Zepp or Gadgetbridge (both installed blocks StarPath).\n" +
-                "\nZepp: enable notification mirroring, then select StarPath.\n" +
-                "Gadgetbridge: allow StarPath in the app list, and turn ON " +
-                    "\"…also when screen is on\" (Settings → Notifications).\n" +
-                "\nOn the watch: screen-on duration 15s–30s, DND off, stay connected over Bluetooth.\n" +
-                "StarPath re-wakes the watch on each turn or street change — " +
-                    "repeating every 30s near arrival (DEST) or 5min otherwise until it changes.\n" +
-                "Cards only arrive with the screen off? Turn that option off in your companion app " +
-                "— or use the 5s button and lock the phone.\n" +
-                "\nNavigate in Google Maps with the phone in your pocket — " +
-                "StarPath starts and stops itself."
-        }
-        layout.addView(help)
         setContentView(ScrollView(this).apply { addView(layout) })
         refreshStatus()
     }
@@ -235,14 +355,17 @@ class MainActivity : Activity() {
                 pendingStep = PendingStep.POST_NOTIFS
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_POST_NOTIFS)
             }
+
             !batteryOk -> {
                 pendingStep = PendingStep.BATTERY
                 requestBatteryExemption()
             }
+
             !listenerOk -> {
                 pendingStep = PendingStep.LISTENER
                 openNotificationListenerSettings()
             }
+
             else -> {
                 pendingStep = PendingStep.NONE
                 Toast.makeText(this, "All permissions granted! StarPath is ready.", Toast.LENGTH_SHORT).show()
@@ -330,6 +453,7 @@ class MainActivity : Activity() {
                 NavNotifier(this).post(card, alert = true)
                 Toast.makeText(this, "Test card sent! Check phone notification & watch", Toast.LENGTH_SHORT).show()
             }
+
             else -> {
                 Toast.makeText(this, deliveryLine(path), Toast.LENGTH_LONG).show()
             }
@@ -362,17 +486,27 @@ class MainActivity : Activity() {
                 if (isBatteryOptimizationDisabled()) {
                     startOnboarding()
                 } else {
-                    Toast.makeText(this, "Battery optimization was not disabled. Tap Grant Permissions to retry.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Battery optimization was not disabled. Tap Grant Permissions to retry.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             PendingStep.LISTENER -> {
                 pendingStep = PendingStep.NONE
                 if (isNotificationListenerEnabled()) {
                     Toast.makeText(this, "StarPath setup is complete!", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "Notification access was not enabled. Tap Grant Permissions to retry.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Notification access was not enabled. Tap Grant Permissions to retry.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
+
             else -> {}
         }
     }
@@ -402,22 +536,20 @@ class MainActivity : Activity() {
         val allOk = listenerOn && notifsOk && batteryOk
 
         val gadgetbridge = path == DeliveryPath.GADGETBRIDGE
-        gbWarning.visibility = if (gadgetbridge) View.VISIBLE else View.GONE
-        gbWarning.text =
-            "⚠ Gadgetbridge: turn ON \"…also when screen is on\" in Settings → Notifications. " +
-                "Without it, Gadgetbridge ignores StarPath cards while your phone screen is on " +
-                "(the test card wakes the screen). Also allow StarPath in Gadgetbridge's app list."
+        if (gadgetbridge) {
+            val dismissed = isGbDismissed()
+            gbCard.visibility = if (dismissed) View.GONE else View.VISIBLE
+            gbShowButton.visibility = if (dismissed) View.VISIBLE else View.GONE
+        } else {
+            gbCard.visibility = View.GONE
+            gbShowButton.visibility = View.GONE
+        }
 
         status.text = "Notification Access: ${if (listenerOn) "ON ✓" else "OFF ✗"}\n" +
-            "StarPath Notifications: ${if (notifsOk) "ON ✓" else "OFF ✗"}\n" +
-            "Battery Optimization: ${if (batteryOk) "unrestricted ✓" else "optimized ✗"}\n" +
-            "${deliveryLine(path)}\n" +
-            (if (gadgetbridge) {
-                "Gadgetbridge: allow StarPath in the app list\n"
-            } else {
-                ""
-            }) +
-            "Background Listener: Automatic (starts when navigating in Maps) ✓"
+                "StarPath Notifications: ${if (notifsOk) "ON ✓" else "OFF ✗"}\n" +
+                "Battery Optimization: ${if (batteryOk) "unrestricted ✓" else "optimized ✗"}\n" +
+                "${deliveryLine(path)}\n" +
+                "Background Listener: Automatic (starts when navigating in Maps) ✓"
 
         if (allOk) {
             setupButton.text = "✓ StarPath Ready (All Permissions Granted)"
