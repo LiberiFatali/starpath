@@ -15,7 +15,7 @@
 
    [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
         alt="Get it on F-Droid"
-        height="50">](https://f-droid.org/en/packages/app.starpath)
+        height="75">](https://f-droid.org/en/packages/app.starpath)
 
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
