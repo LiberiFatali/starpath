@@ -7,12 +7,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -52,6 +54,7 @@ class MainActivity : Activity() {
     }
 
     private lateinit var status: TextView
+    private lateinit var gbWarning: TextView
     private lateinit var setupButton: Button
     private lateinit var asciiButton: Button
     private lateinit var lastParseView: TextView
@@ -93,11 +96,19 @@ class MainActivity : Activity() {
             text = "★ StarPath v${BuildConfig.VERSION_NAME}"
             textSize = 24f
         }
+        gbWarning = TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.rgb(0xE6, 0x51, 0x00))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 12, 0, 4)
+            visibility = View.GONE
+        }
         status = TextView(this).apply {
             textSize = 15f
             setPadding(0, 8, 0, 16)
         }
         layout.addView(title)
+        layout.addView(gbWarning)
         layout.addView(status)
 
         setupButton = Button(this).apply {
@@ -199,7 +210,8 @@ class MainActivity : Activity() {
             textSize = 14f
             text = "\nOne watch app only: Zepp or Gadgetbridge (both installed blocks StarPath).\n" +
                 "\nZepp: enable notification mirroring, then select StarPath.\n" +
-                "Gadgetbridge: enable StarPath under Notifications.\n" +
+                "Gadgetbridge: allow StarPath in the app list, and turn ON " +
+                    "\"…also when screen is on\" (Settings → Notifications).\n" +
                 "\nOn the watch: screen-on duration 15s–30s, DND off, stay connected over Bluetooth.\n" +
                 "StarPath re-wakes the watch on each turn or street change — " +
                     "repeating every 30s near arrival (DEST) or 5min otherwise until it changes.\n" +
@@ -389,12 +401,19 @@ class MainActivity : Activity() {
         val path = deliveryPath()
         val allOk = listenerOn && notifsOk && batteryOk
 
+        val gadgetbridge = path == DeliveryPath.GADGETBRIDGE
+        gbWarning.visibility = if (gadgetbridge) View.VISIBLE else View.GONE
+        gbWarning.text =
+            "⚠ Gadgetbridge: turn ON \"…also when screen is on\" in Settings → Notifications. " +
+                "Without it, Gadgetbridge ignores StarPath cards while your phone screen is on " +
+                "(the test card wakes the screen). Also allow StarPath in Gadgetbridge's app list."
+
         status.text = "Notification Access: ${if (listenerOn) "ON ✓" else "OFF ✗"}\n" +
             "StarPath Notifications: ${if (notifsOk) "ON ✓" else "OFF ✗"}\n" +
             "Battery Optimization: ${if (batteryOk) "unrestricted ✓" else "optimized ✗"}\n" +
             "${deliveryLine(path)}\n" +
-            (if (path == DeliveryPath.GADGETBRIDGE) {
-                "Gadgetbridge: enable StarPath under Notifications\n"
+            (if (gadgetbridge) {
+                "Gadgetbridge: allow StarPath in the app list\n"
             } else {
                 ""
             }) +

@@ -11,7 +11,12 @@
 ## 🚀 How to Use
 
 1. **Install the App**:
-   Download the latest signed `starpath-v*.apk` from **GitHub Releases** and install it on your Android phone.
+   Install via **F-Droid** or download the latest signed `starpath-v*.apk` from **[GitHub Releases](https://github.com/LiberiFatali/starpath/releases)**:
+
+   [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+        alt="Get it on F-Droid"
+        height="50">](https://f-droid.org/en/packages/app.starpath)
+
 2. **Grant Permissions (1-Tap Setup)**:
    Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
 3. **Enable in Zepp App or Gadgetbridge (keep only one)**:
@@ -71,4 +76,4 @@ Output artifacts:
 
 ## ⚠️ Safety
 
-Glance only — never interact with your watch while riding or driving.
+Glance only - never interact with your watch while riding or driving.
