@@ -57,3 +57,6 @@ See `docs/IMPLEMENTATION.md` (canonical) and `docs/PRIVACY_POLICY.md`.
 - `KeepAliveService` (`specialUse`) starts/tears down with Maps navigation
   automatically. Keep background work minimal (battery, wake locks,
   allocations).
+- `LocationToolsActivity` is offline and user-initiated: coordinates are
+  processed in memory only, never persisted or transmitted, and there is no
+  `INTERNET` permission. External map handoff is a `geo:` intent.

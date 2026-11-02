@@ -6,12 +6,22 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Optional, user-initiated: fill coordinates from the current position.
+         Never used in the background. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <!-- Package-visibility for the single-path delivery gate (no permission
          needed): detect exactly which of the Zepp App / Gadgetbridge is
          installed. Without this, getPackageInfo throws on API 30+. -->
     <queries>
         <package android:name="com.huami.watch.hmwatchmanager" />
         <package android:name="nodomain.freeyourgadget.gadgetbridge" />
+        <!-- Let Location Tools see whether a map app can open a geo: point. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
     </queries>
 
     <application
@@ -30,6 +40,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.LocationToolsActivity"
+            android:exported="false"
+            android:label="Location Tools" />
 
         <service
             android:name=".nav.runtime.StarPathListener"

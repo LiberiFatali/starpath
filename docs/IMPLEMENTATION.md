@@ -283,3 +283,35 @@ card reaches the watch and the nav-end `cancel()` retracts it there.
 **Files:** `nav/runtime/DeliveryPath.kt` (`DeliveryPaths.resolve`, JVM-tested
 matrix). Tests: `DeliveryPathTest`.
 See `docs/COMPATIBILITY.md` for the user-facing one-app rule.
+
+---
+
+## 7. Location Tools: Zero-Network Coordinate Conversion & Live GPS
+
+StarPath includes a dedicated, privacy-preserving Location Tools module (`LocationToolsActivity`) that performs coordinate conversion, Plus Code / Geohash extraction, and strict live GPS location acquisition without network connectivity (`android.permission.INTERNET` is absent).
+
+### Core Principles & Behaviors
+1. **Strict Live GPS ("Use current location")**:
+   - Uses `LocationManager.GPS_PROVIDER` directly via a one-shot `LocationListener`.
+   - Requires fine location permission (`ACCESS_FINE_LOCATION`).
+   - **Zero cache**: never queries `getLastKnownLocation()`. Accepts only a fresh live fix (`Result.Found`), immediately unregisters the listener, or times out after 20 seconds (`Result.NoFix`).
+2. **Offline Local Plus Code Recovery**:
+   - Handles full Plus Codes (`8FVC9G8F+6X`) and short Plus Codes with locality/address suffixes (e.g. `"8QHG+VV Kim Anh, Ha Noi, Vietnam"` or `"8QHG+VV Kim Anh, Hà Nội, Việt Nam"`).
+   - Decodes short codes purely on-device using a normalized offline dictionary of major city/province reference anchors (`CityAnchors`), stripping diacritics and matching word boundaries.
+   - Alternatively recovers short codes against a live GPS reference point when available.
+3. **Clipboard Privacy & UI Polish**:
+   - Material icon buttons for copying coordinate formats with borderless ripples and haptic feedback.
+   - Emits `ClipDescription.EXTRA_IS_SENSITIVE = true` (`"android.content.extra.IS_SENSITIVE"`) to suppress Android 13+ SystemUI floating Share / Quick Share prompts.
+   - No "Share" button or intent broadcast anywhere in the activity.
+   - Dedicated `← Back` action navigating cleanly back to `MainActivity`.
+   - "Location Tools" button is anchored at the absolute bottom of `MainActivity` below "Tips & Updates".
+
+**Files:**
+- `coords/GeoPoint.kt`: Immutable `(latitude, longitude)` data class.
+- `coords/DegreeFormats.kt`: Pure parser/formatter for Decimal Degrees, DMS, and DDM.
+- `coords/PlusCode.kt`: Wrapper around OpenLocationCode with locality extraction and offline `CityAnchors`.
+- `coords/Geohash.kt`: Pure on-device Geohash codec.
+- `coords/CoordinateParser.kt`: Unified parser auto-detecting and validating all formats.
+- `coords/CurrentLocation.kt`: Strict live-GPS-only locator without cache.
+- `ui/LocationToolsActivity.kt`: Interactive coordinate converter UI.
+Tests: `CoordinateParserTest`, `PlusCodeTest`, `DegreeFormatsTest`, `GeohashTest`, `CurrentLocationTest`.

@@ -3,11 +3,13 @@ agp = "9.4.0"
 kotlin = "2.4.20"
 coreKtx = "1.18.0"
 lifecycle = "2.11.0"
+openlocationcode = "1.0.4"
 junit = "4.13.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+openlocationcode = { group = "com.google.openlocationcode", name = "openlocationcode", version.ref = "openlocationcode" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 

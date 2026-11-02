@@ -341,6 +341,10 @@ class MainActivity : Activity() {
             })
         }
 
+        addButton("Location Tools (Decimal · DMS · DDM · Plus Code · Geohash)") {
+            startActivity(Intent(this@MainActivity, LocationToolsActivity::class.java))
+        }
+
         setContentView(ScrollView(this).apply { addView(layout) })
         refreshStatus()
     }

@@ -1,6 +1,6 @@
 # Privacy Policy for StarPath
 
-**Effective Date:** September 14, 2026
+**Effective Date:** November 2, 2026
 
 StarPath ("we", "our", or "the app") is an open-source Android companion utility designed to mirror Google Maps turn-by-turn navigation directions to smartwatches (such as the Amazfit Active 2 via the Zepp app).
 
@@ -24,13 +24,18 @@ StarPath requires specific Android permissions to function as intended. All data
 ### C. Battery Optimization Exemption
 * **Purpose**: Prevents the Android operating system from aggressively killing the listener service during long rides with the screen locked.
 
+### D. Location (optional, `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION`)
+* **Purpose**: Lets **Location Tools** fill in your current position when you tap **Use current location**. The permission is requested only then; it is never used in the background or for navigation parsing.
+* **Storage & Transmission**: The position is converted in memory and shown in the app. It is not saved to persistent storage, logged, or uploaded. StarPath does not request the `INTERNET` permission.
+* **External map handoff**: Tapping **Show on map** opens a `geo:` link in a map app you choose. That app handles the coordinate under its own privacy policy.
+
 ---
 
 ## 2. Data Collection and Sharing
 
-* **No Personal Data Collected**: StarPath does not collect, track, or log any personal information, device identifiers, or GPS coordinates.
+* **No Personal Data Collected**: StarPath does not collect, track, log, or upload any personal information, device identifiers, or GPS coordinates. The optional Location Tools screen processes a position only when you request it; the resulting coordinates remain in memory and are not stored.
 * **No Analytics or Trackers**: The application contains no tracking libraries, telemetry SDKs, or third-party advertising frameworks.
-* **No Network Transmission**: StarPath does not communicate with any external servers. All operations happen strictly between your phone and your watch companion app (via Android's native notification bridge).
+* **No Network Transmission**: StarPath does not communicate with any external servers. All operations happen strictly between your phone and your watch companion app (via Android's native notification bridge), or through an external map app that you explicitly open with a `geo:` link.
 
 ---
 
@@ -39,8 +44,9 @@ StarPath requires specific Android permissions to function as intended. All data
 StarPath interacts locally with:
 * **Google Maps**: To read navigation updates while you navigate.
 * **Companion Watch Apps (Zepp App or Gadgetbridge — exactly one; see `docs/COMPATIBILITY.md`)**: By posting a clean Android notification card, which your companion watch app forwards over Bluetooth Low Energy (BLE) to your paired smartwatch.
+* **Your chosen map app (optional)**: Only when you tap **Show on map**; StarPath passes the coordinate in a `geo:` intent and does not track what that app does next.
 
-Please refer to Google's and your smartwatch companion app's respective privacy policies for how they handle notifications forwarded over Bluetooth.
+Please refer to Google's, your smartwatch companion app's, and your map app's respective privacy policies for how they handle data after it is handed to them.
 
 ---
 

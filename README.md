@@ -18,7 +18,7 @@
         height="75">](https://f-droid.org/en/packages/app.starpath)
 
 2. **Grant Permissions (1-Tap Setup)**:
-   Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications.
+   Open StarPath and tap **Grant Permissions (1-Tap Setup)** to enable notification access, battery optimization exemption, and notifications. Location is optional and is only requested later from **Location Tools** if you tap **Use current location**.
 3. **Enable in Zepp App or Gadgetbridge (keep only one)**:
     In the Zepp App, open your paired watch and enable notification/alert mirroring, then select **StarPath** (tap **Send test card to watch** in StarPath first if StarPath does not appear in the app list yet). Prefer Gadgetbridge? Pair the watch there instead and enable **StarPath** under Notifications. See `docs/COMPATIBILITY.md` for the one-app rule — both installed, or neither, blocks delivery.
 4. **Ride with Google Maps**:
@@ -26,6 +26,20 @@
 
 > [!TIP]
 > **Screen-off Alert Tip**: If your companion app has a "receive only when phone screen is off" option and it is enabled, it will not send notifications to the watch while your phone screen is turned on. Either turn that setting OFF for testing, or tap **"Send test card in 5s"** in StarPath and immediately lock your phone screen.
+
+---
+
+## Location Tools
+
+StarPath also includes an offline coordinate converter (open it from the main screen). It reads and writes:
+
+- Decimal degrees
+- DMS (degrees, minutes, seconds)
+- DDM (degrees and decimal minutes)
+- Open Location Codes (Plus Codes), full or short near a reference
+- Geohash
+
+Type or paste a coordinate, or tap **Use current location** (the optional location permission is requested only at that moment). Copy individual values, copy/share all formats, or open the point in your preferred map app through a `geo:` link. Everything is computed on-device; StarPath does not store or transmit coordinates and does not request the `INTERNET` permission.
 
 ---
 

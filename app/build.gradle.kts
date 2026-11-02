@@ -124,5 +124,6 @@ if (System.getenv("GITHUB_ACTIONS") == "true") {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.openlocationcode)
     testImplementation(libs.junit)
 }
