@@ -1,0 +1,2 @@
+- Release 0.22.
+- feat(coords): add offline location tools and coordinate parser
